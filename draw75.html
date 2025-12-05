@@ -1,5 +1,6 @@
 <!-- Created by GPT-5-Codex -->
 <!-- Build a web page that draw Bingo number from 1 to 75, show the history of drawing. and not duplicate of already drew number. Nicely display layout for both mobile view and for showing on big TV on the stage. -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,7 +85,6 @@
       display: grid;
       place-content: center;
       box-shadow: 0 0 40px rgba(96, 165, 250, 0.35);
-      position: relative;
     }
 
     .big-value {
@@ -92,37 +92,6 @@
       font-weight: 800;
       line-height: 0.85;
       letter-spacing: 0.04em;
-    }
-
-    .status-bar {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      text-align: center;
-    }
-
-    .status-item {
-      border-radius: 18px;
-      padding: 1rem;
-      border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.6);
-    }
-
-    .status-item span {
-      display: block;
-    }
-
-    .status-label {
-      font-size: 0.9rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-    }
-
-    .status-value {
-      font-size: clamp(1.75rem, 3vw, 2.6rem);
-      font-weight: 700;
     }
 
     .controls {
@@ -282,10 +251,6 @@
         border-width: 8px;
         box-shadow: 0 0 60px rgba(96, 165, 250, 0.35);
       }
-
-      .status-value {
-        font-size: 3rem;
-      }
     }
   </style>
 </head>
@@ -300,21 +265,6 @@
       <div class="main-display">
         <div class="big-number" id="bigNumber" aria-label="Last drawn number">
           <span class="big-value" id="bigValue">—</span>
-        </div>
-
-        <div class="status-bar">
-          <div class="status-item" aria-live="polite">
-            <span class="status-label">Numbers Drawn</span>
-            <span class="status-value" id="drawnCount">0</span>
-          </div>
-          <div class="status-item" aria-live="polite">
-            <span class="status-label">Numbers Remaining</span>
-            <span class="status-value" id="remainingCount">75</span>
-          </div>
-          <div class="status-item" aria-live="polite">
-            <span class="status-label">Last Number</span>
-            <span class="status-value" id="lastNumber">—</span>
-          </div>
         </div>
 
         <div class="progress-track">
@@ -346,71 +296,138 @@
   <script>
     (() => {
       const TOTAL_NUMBERS = 75;
+      const STORAGE_KEY = "bingoDrawState_v1";
 
       const bigValueEl = document.getElementById("bigValue");
-      const drawnCountEl = document.getElementById("drawnCount");
-      const remainingCountEl = document.getElementById("remainingCount");
-      const lastNumberEl = document.getElementById("lastNumber");
       const progressPercentEl = document.getElementById("progressPercent");
       const progressFillEl = document.getElementById("progressFill");
+      const progressBar = document.querySelector(".progress-bar");
       const historyGridEl = document.getElementById("historyGrid");
       const historyCountLabelEl = document.getElementById("historyCountLabel");
       const drawButton = document.getElementById("drawButton");
       const resetButton = document.getElementById("resetButton");
-      const progressBar = document.querySelector(".progress-bar");
 
       let remainingNumbers = [];
       let drawnNumbers = [];
 
       const formatNumber = (value) => value.toString().padStart(2, "0");
 
-      const shuffleNumbers = () => {
-        remainingNumbers = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
-        for (let i = remainingNumbers.length - 1; i > 0; i--) {
+      const createShuffledNumbers = () => {
+        const numbers = Array.from({ length: TOTAL_NUMBERS }, (_, i) => i + 1);
+        for (let i = numbers.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [remainingNumbers[i], remainingNumbers[j]] = [remainingNumbers[j], remainingNumbers[i]];
+          [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+        return numbers;
+      };
+
+      const saveState = () => {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              drawnNumbers,
+              remainingNumbers
+            })
+          );
+        } catch (error) {
+          console.error("Unable to save bingo state:", error);
+        }
+      };
+
+      const loadState = () => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (
+            !parsed ||
+            !Array.isArray(parsed.drawnNumbers) ||
+            !Array.isArray(parsed.remainingNumbers)
+          ) {
+            return null;
+          }
+
+          const combinedLength = parsed.drawnNumbers.length + parsed.remainingNumbers.length;
+          if (combinedLength !== TOTAL_NUMBERS) {
+            return null;
+          }
+
+          const numberSet = new Set([...parsed.drawnNumbers, ...parsed.remainingNumbers]);
+          if (numberSet.size !== TOTAL_NUMBERS) {
+            return null;
+          }
+
+          const allValid = [...numberSet].every(
+            (num) => Number.isInteger(num) && num >= 1 && num <= TOTAL_NUMBERS
+          );
+          if (!allValid) {
+            return null;
+          }
+
+          return parsed;
+        } catch (error) {
+          console.error("Unable to load bingo state:", error);
+          return null;
         }
       };
 
       const updateDisplay = (value) => {
         bigValueEl.textContent = value ? formatNumber(value) : "—";
-        lastNumberEl.textContent = value ? formatNumber(value) : "—";
       };
 
       const updateStatus = () => {
         const drawnCount = drawnNumbers.length;
-        const remainingCount = TOTAL_NUMBERS - drawnCount;
         const percent = drawnCount === 0 ? 0 : Math.round((drawnCount / TOTAL_NUMBERS) * 100);
-        drawnCountEl.textContent = drawnCount;
-        remainingCountEl.textContent = remainingCount;
         progressPercentEl.textContent = `${percent}%`;
         progressFillEl.style.transform = `scaleX(${drawnCount / TOTAL_NUMBERS})`;
         progressBar.setAttribute("aria-valuenow", drawnCount);
       };
 
-      const createHistoryCell = (number) => {
+      const createHistoryCell = (number, isLatest) => {
         const cell = document.createElement("div");
-        cell.className = "history-cell active";
-        cell.innerHTML = `
-          <span class="history-number">${formatNumber(number)}</span>
-        `;
+        cell.className = "history-cell";
+        if (isLatest) {
+          cell.classList.add("active");
+        }
+        cell.innerHTML = `<span class="history-number">${formatNumber(number)}</span>`;
         return cell;
       };
 
       const refreshHistory = () => {
         historyGridEl.innerHTML = "";
-        drawnNumbers.slice().reverse().forEach((number, index) => {
-          const cell = createHistoryCell(number);
-          if (index === 0) {
-            cell.classList.add("active");
-          }
+
+        if (!drawnNumbers.length) {
+          historyCountLabelEl.textContent = "No numbers drawn yet.";
+          return;
+        }
+
+        const reversed = drawnNumbers.slice().reverse();
+        reversed.forEach((number, index) => {
+          const cell = createHistoryCell(number, index === 0);
           historyGridEl.appendChild(cell);
         });
 
         const count = drawnNumbers.length;
-        historyCountLabelEl.textContent = count
-          ? `${count} ${count === 1 ? "number" : "numbers"} drawn`
-          : "No numbers drawn yet.";
+        historyCountLabelEl.textContent = `${count} ${count === 1 ? "number" : "numbers"} drawn`;
+      };
+
+      const updateButtonState = () => {
+        if (!remainingNumbers.length) {
+          drawButton.disabled = true;
+          drawButton.textContent = "All Numbers Drawn";
+        } else {
+          drawButton.disabled = false;
+          drawButton.textContent = "Draw Next Number";
+        }
+      };
+
+      const updateAllUI = () => {
+        const lastNumber = drawnNumbers.length ? drawnNumbers[drawnNumbers.length - 1] : 0;
+        updateDisplay(lastNumber);
+        updateStatus();
+        refreshHistory();
+        updateButtonState();
       };
 
       const drawNextNumber = () => {
@@ -419,29 +436,14 @@
         const nextNumber = remainingNumbers.pop();
         drawnNumbers.push(nextNumber);
 
-        updateDisplay(nextNumber);
-        updateStatus();
-        refreshHistory();
-
-        if (!remainingNumbers.length) {
-          drawButton.disabled = true;
-          drawButton.textContent = "All Numbers Drawn";
-        }
+        updateAllUI();
+        saveState();
       };
 
-      const resetGame = () => {
-        shuffleNumbers();
+      const startNewGame = () => {
+        remainingNumbers = createShuffledNumbers();
         drawnNumbers = [];
-        updateDisplay(0);
-        drawnCountEl.textContent = "0";
-        remainingCountEl.textContent = TOTAL_NUMBERS.toString();
-        progressPercentEl.textContent = "0%";
-        progressFillEl.style.transform = "scaleX(0)";
-        progressBar.setAttribute("aria-valuenow", "0");
-        historyGridEl.innerHTML = "";
-        historyCountLabelEl.textContent = "No numbers drawn yet.";
-        drawButton.disabled = false;
-        drawButton.textContent = "Draw Next Number";
+        updateAllUI();
       };
 
       drawButton.addEventListener("click", () => {
@@ -449,12 +451,19 @@
       });
 
       resetButton.addEventListener("click", () => {
-        resetGame();
+        const confirmed = window.confirm(
+          "Are you sure you want to reset the game?\nThis will clear the draw history and start over."
+        );
+        if (!confirmed) return;
+
+        localStorage.removeItem(STORAGE_KEY);
+        startNewGame();
       });
 
       document.addEventListener("keydown", (event) => {
         const activeElement = document.activeElement;
-        const isInputFocused = activeElement && ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(activeElement.tagName);
+        const isInputFocused =
+          activeElement && ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(activeElement.tagName);
         if (isInputFocused) return;
 
         if (event.code === "Space" || event.code === "Enter") {
@@ -463,11 +472,22 @@
             drawNextNumber();
           }
         } else if (event.key.toLowerCase() === "r") {
-          resetGame();
+          resetButton.click();
         }
       });
 
-      resetGame();
+      const initialize = () => {
+        const savedState = loadState();
+        if (savedState) {
+          drawnNumbers = savedState.drawnNumbers;
+          remainingNumbers = savedState.remainingNumbers;
+          updateAllUI();
+        } else {
+          startNewGame();
+        }
+      };
+
+      initialize();
     })();
   </script>
 </body>
