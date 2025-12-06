@@ -26,7 +26,7 @@
       margin: 0;
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: clamp(1rem, 2vw, 2.5rem);
       font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
@@ -71,7 +71,7 @@
       box-shadow:
         inset 0 0 30px rgba(30, 64, 175, 0.25),
         inset 0 0 0 1px rgba(59, 130, 246, 0.15);
-      min-height: clamp(220px, 40vw, 360px);
+      min-height: clamp(220px, 30vw, 360px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -121,6 +121,14 @@
         0 18px 30px rgba(251, 191, 36, 0.25),
         0 0 0 1px rgba(251, 191, 36, 0.35);
       transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    .btn-secondary {
+      background: var(--secondary-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--secondary-border);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4), inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+      backdrop-filter: blur(6px);
     }
 
     .controls button:hover,
@@ -181,10 +189,6 @@
 </head>
 <body>
   <div class="game-shell">
-    <header>
-      <h1>獎門人 超級無敵大電視</h1>
-      <p class="subtitle">台上背對大電視，靠台下描述來猜詞！</p>
-    </header>
 
     <main>
       <section class="screen" aria-live="polite" aria-atomic="true">
@@ -193,7 +197,7 @@
 
       <section class="controls">
         <button id="nextButton" type="button">開始</button>
-        <button id="resetButton" type="button">重新開始</button>
+        <button id="resetButton" class="btn-secondary" type="button">重新開始</button>
       </section>
 
       <section class="status-bar">
