@@ -16,7 +16,7 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 
 ## Others (AI)
 
-- [電商加 ECommKun on Whatsapp Copilot](https://mak.la/ecommkun)
+- [電商君 ECommKun on Whatsapp Copilot](https://mak.la/ecommkun)
 
 ## Vocab Learning
 
