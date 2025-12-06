@@ -204,7 +204,7 @@
 
       <section class="status-bar">
         <span><span class="bulb"></span>按「空白鍵」或「Enter」也可以跳至下一個詞語</span>
-        <span id="progress">進度：0 / 51</span>
+        <span id="progress">進度：0</span>
       </section>
     </main>
   </div>
@@ -274,7 +274,7 @@
 
     const updateProgress = () => {
       const shown = Math.max(0, currentIndex + 1);
-      progress.textContent = `進度：${shown} / ${words.length}`;
+      progress.textContent = `進度：${shown}`;
     };
 
     const showWord = (index) => {
