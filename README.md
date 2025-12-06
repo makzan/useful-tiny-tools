@@ -20,5 +20,10 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 
 ## Vocab Learning
 
-- [Vocab for Marcus](https://mak.la/vocab)
+- [Vocab 1 for Marcus](https://marcus-marco-learning.netlify.app/p5vocab1)
+- [Vocab 2 for Marcus](https://marcus-marco-learning.netlify.app/p5vocab2)
+- [Vocab 6 for Marcus](https://marcus-marco-learning.netlify.app/p5vocab6)
 
+## Photo Tools
+
+- [Photo Stitcher](photo-stick.html)

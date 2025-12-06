@@ -1,0 +1,554 @@
+<!-- Created by GPT-5-Codex -->
+<!-- Generate a tool that allows me to drag in multiple photos and stick them together either vertical or horizontal. Then user can click save to save the exported long image.-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Photo Stitcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f5f8;
+      --bg-dark: #1b1b1f;
+      --card: #ffffffcc;
+      --card-dark: #262630cc;
+      --border: rgba(0, 0, 0, 0.12);
+      --border-dark: rgba(255, 255, 255, 0.16);
+      --accent: #4f6ef7;
+      --accent-dark: #87a4ff;
+      --text: #1e1e26;
+      --text-dark: #f4f4fb;
+    }
+
+    html, body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100%;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background: var(--bg-dark);
+        color: var(--text-dark);
+      }
+      .card {
+        background: var(--card-dark);
+        border: 1px solid var(--border-dark);
+      }
+      .drop-zone {
+        border-color: var(--border-dark);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      button,
+      input[type="radio"] + label {
+        color: var(--text-dark);
+      }
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: clamp(16px, 4vw, 32px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 3vw, 24px);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      padding: clamp(16px, 4vw, 28px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 3vw, 24px);
+    }
+
+    .drop-zone {
+      position: relative;
+      border: 2px dashed var(--accent);
+      border-radius: 16px;
+      padding: clamp(36px, 8vw, 64px) clamp(20px, 6vw, 48px);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 150ms ease, background-color 150ms ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+    }
+
+    .drop-zone.drag-over {
+      border-style: solid;
+      border-color: var(--accent);
+      background: rgba(79, 110, 247, 0.1);
+    }
+
+    .drop-zone span {
+      font-size: clamp(1rem, 2.4vw, 1.25rem);
+      font-weight: 600;
+    }
+
+    .drop-zone small {
+      opacity: 0.65;
+      font-size: 0.85rem;
+    }
+
+    .drop-zone button {
+      pointer-events: none;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .orientation {
+      display: inline-flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .orientation label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .file-item {
+        background: rgba(255, 255, 255, 0.04);
+      }
+    }
+
+    .thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #f2f2f7;
+    }
+
+    .file-name {
+      flex: 1;
+      font-size: 0.95rem;
+      word-break: break-word;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .actions button {
+      min-width: 32px;
+      min-height: 32px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+      box-shadow: 0 8px 20px rgba(79, 110, 247, 0.25);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+      box-shadow: none;
+      border: 1px solid var(--accent);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .preview-container {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .preview-container.active {
+      display: flex;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Photo Stitcher</h1>
+    </header>
+
+    <section class="card">
+      <label class="drop-zone" id="dropZone">
+        <span>Drag &amp; drop photos here</span>
+        <small>or click to browse</small>
+        <button type="button" class="secondary">Choose Files</button>
+        <input id="fileInput" type="file" accept="image/*" multiple />
+      </label>
+
+      <div class="controls">
+        <div class="orientation">
+          <span>Layout:</span>
+          <div>
+            <input type="radio" id="vertical" name="orientation" value="vertical" checked />
+            <label for="vertical">Vertical</label>
+          </div>
+          <div>
+            <input type="radio" id="horizontal" name="orientation" value="horizontal" />
+            <label for="horizontal">Horizontal</label>
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="clearBtn" class="secondary" type="button">Clear List</button>
+          <button id="stitchBtn" type="button">Create Stitched Image</button>
+        </div>
+      </div>
+
+      <div id="fileList" class="file-list">
+        <div class="empty-state" id="emptyState">No photos added yet.</div>
+      </div>
+    </section>
+
+    <section class="card preview-container" id="previewSection">
+      <header>
+        <h2 style="margin: 0;">Preview &amp; Save</h2>
+      </header>
+      <canvas id="previewCanvas"></canvas>
+      <div class="button-row">
+        <button id="downloadBtn" type="button" disabled>Save Image</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('fileInput');
+      const fileList = document.getElementById('fileList');
+      const emptyState = document.getElementById('emptyState');
+      const stitchBtn = document.getElementById('stitchBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const previewCanvas = document.getElementById('previewCanvas');
+      const previewSection = document.getElementById('previewSection');
+      const orientationRadios = Array.from(document.querySelectorAll('input[name="orientation"]'));
+
+      let images = [];
+
+      const handleFiles = (files) => {
+        const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        if (!validFiles.length) return;
+
+        validFiles.forEach(file => {
+          const url = URL.createObjectURL(file);
+          images.push({ file, url });
+        });
+
+        renderList();
+      };
+
+      const renderList = () => {
+        fileList.innerHTML = '';
+
+        if (!images.length) {
+          emptyState.style.display = 'block';
+          fileList.appendChild(emptyState);
+          previewSection.classList.remove('active');
+          downloadBtn.disabled = true;
+          return;
+        }
+
+        emptyState.style.display = 'none';
+
+        images.forEach((imgObj, index) => {
+          const item = document.createElement('div');
+          item.className = 'file-item';
+          item.draggable = true;
+          item.dataset.index = index;
+
+          const thumb = document.createElement('img');
+          thumb.className = 'thumb';
+          thumb.src = imgObj.url;
+          thumb.alt = imgObj.file.name;
+
+          const info = document.createElement('div');
+          info.className = 'file-name';
+          info.textContent = imgObj.file.name;
+
+          const actions = document.createElement('div');
+          actions.className = 'actions';
+
+          const upBtn = document.createElement('button');
+          upBtn.type = 'button';
+          upBtn.className = 'secondary';
+          upBtn.textContent = '↑';
+          upBtn.title = 'Move up';
+          upBtn.addEventListener('click', () => moveItem(index, -1));
+
+          const downBtn = document.createElement('button');
+          downBtn.type = 'button';
+          downBtn.className = 'secondary';
+          downBtn.textContent = '↓';
+          downBtn.title = 'Move down';
+          downBtn.addEventListener('click', () => moveItem(index, 1));
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'secondary';
+          removeBtn.textContent = '✕';
+          removeBtn.title = 'Remove';
+          removeBtn.addEventListener('click', () => removeItem(index));
+
+          actions.append(upBtn, downBtn, removeBtn);
+          item.append(thumb, info, actions);
+          fileList.appendChild(item);
+
+          addDragHandlers(item);
+        });
+      };
+
+      const moveItem = (index, delta) => {
+        const newIndex = index + delta;
+        if (newIndex < 0 || newIndex >= images.length) return;
+        const [item] = images.splice(index, 1);
+        images.splice(newIndex, 0, item);
+        renderList();
+      };
+
+      const removeItem = (index) => {
+        URL.revokeObjectURL(images[index].url);
+        images.splice(index, 1);
+        renderList();
+      };
+
+      const clearAll = () => {
+        images.forEach(img => URL.revokeObjectURL(img.url));
+        images = [];
+        renderList();
+      };
+
+      const loadImage = (imgObj) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ img, width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = reject;
+        img.src = imgObj.url;
+      });
+
+      const stitchImages = async () => {
+        if (!images.length) {
+          alert('Please add at least one photo.');
+          return;
+        }
+
+        stitchBtn.disabled = true;
+        stitchBtn.textContent = 'Processing…';
+        downloadBtn.disabled = true;
+
+        try {
+          const orientation = orientationRadios.find(r => r.checked)?.value || 'vertical';
+          const loaded = await Promise.all(images.map(loadImage));
+
+          if (!loaded.length) throw new Error('No images loaded');
+
+          let totalWidth = 0;
+          let totalHeight = 0;
+          let maxWidth = 0;
+          let maxHeight = 0;
+
+          loaded.forEach(({ width, height }) => {
+            totalWidth += width;
+            totalHeight += height;
+            maxWidth = Math.max(maxWidth, width);
+            maxHeight = Math.max(maxHeight, height);
+          });
+
+          const canvas = previewCanvas;
+          const ctx = canvas.getContext('2d');
+
+          if (orientation === 'vertical') {
+            canvas.width = maxWidth;
+            canvas.height = totalHeight;
+          } else {
+            canvas.width = totalWidth;
+            canvas.height = maxHeight;
+          }
+
+          ctx.fillStyle = 'transparent';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          let offsetX = 0;
+          let offsetY = 0;
+
+          loaded.forEach(({ img, width, height }) => {
+            if (orientation === 'vertical') {
+              const x = (maxWidth - width) / 2;
+              ctx.drawImage(img, x, offsetY, width, height);
+              offsetY += height;
+            } else {
+              const y = (maxHeight - height) / 2;
+              ctx.drawImage(img, offsetX, y, width, height);
+              offsetX += width;
+            }
+          });
+
+          previewSection.classList.add('active');
+          downloadBtn.disabled = false;
+          stitchBtn.textContent = 'Create Stitched Image';
+        } catch (error) {
+          console.error(error);
+          alert('Something went wrong while stitching the images.');
+          previewSection.classList.remove('active');
+        } finally {
+          stitchBtn.disabled = false;
+          stitchBtn.textContent = 'Create Stitched Image';
+        }
+      };
+
+      const downloadImage = () => {
+        const link = document.createElement('a');
+        link.download = `stitched-${Date.now()}.png`;
+        link.href = previewCanvas.toDataURL('image/png');
+        link.click();
+      };
+
+      const addDragHandlers = (item) => {
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', item.dataset.index);
+          item.classList.add('dragging');
+        });
+
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          const dragging = document.querySelector('.file-item.dragging');
+          if (!dragging || dragging === item) return;
+          const draggingIndex = Number(dragging.dataset.index);
+          const targetIndex = Number(item.dataset.index);
+          if (draggingIndex === targetIndex) return;
+
+          const rect = item.getBoundingClientRect();
+          const midpoint = rect.top + rect.height / 2;
+          const isAfter = e.clientY > midpoint;
+          fileList.insertBefore(dragging, isAfter ? item.nextSibling : item);
+
+          const reordered = Array.from(fileList.querySelectorAll('.file-item')).map(el => Number(el.dataset.index));
+          images = reordered.map(idx => images[idx]);
+          renderList();
+        });
+      };
+
+      dropZone.addEventListener('click', () => fileInput.click());
+
+      fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        fileInput.value = '';
+      });
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+      });
+
+      stitchBtn.addEventListener('click', stitchImages);
+      downloadBtn.addEventListener('click', downloadImage);
+      clearBtn.addEventListener('click', clearAll);
+      orientationRadios.forEach(radio => radio.addEventListener('change', () => {
+        if (!downloadBtn.disabled) {
+          // optional: auto-update preview when orientation changes
+        }
+      }));
+
+      window.addEventListener('beforeunload', () => {
+        images.forEach(img => URL.revokeObjectURL(img.url));
+      });
+    })();
+  </script>
+</body>
+</html>
