@@ -256,7 +256,7 @@
 <body>
   <main class="app">
     <header>
-      <h1 contenteditable="true">Bingo Draw Master</h1>
+      <!-- <h1 contenteditable="true">Bingo Draw Master</h1> -->
       <p>Draw unique bingo numbers (1 &ndash; 75)</p>
     </header>
 
@@ -279,6 +279,7 @@
         <div class="controls">
           <button id="drawButton" type="button">Draw Next Number</button>
           <button id="resetButton" type="button" class="secondary-btn">Reset Game</button>
+          <button id="fullscreenButton" type="button" class="secondary-btn">Fullscreen</button>
         </div>
       </div>
 
@@ -474,6 +475,27 @@
           resetButton.click();
         }
       });
+
+      // Fullscreen toggle
+      const fullscreenButton = document.getElementById("fullscreenButton");
+
+      const updateFullscreenButton = () => {
+        const isFullscreen = !!document.fullscreenElement;
+        fullscreenButton.textContent = isFullscreen ? "Exit Fullscreen" : "Fullscreen";
+      };
+
+      const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.error("Error entering fullscreen:", err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      };
+
+      fullscreenButton.addEventListener("click", toggleFullscreen);
+      document.addEventListener("fullscreenchange", updateFullscreenButton);
 
       const initialize = () => {
         const savedState = loadState();
