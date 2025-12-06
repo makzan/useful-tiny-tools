@@ -1,0 +1,325 @@
+<!-- Created by GPT-5-Codex -->
+<!-- 是否知道獎門人的超級無敵大電視? 就是畫面上每次只顯示一個詞語，然後台下的人就會描述，而台上的人背向大屏幕看不到詞語, 要憑台下的人的描述來猜中這個詞語. 猜中後可以按下一個, 顯示下一個詞語, 如此類推. 幫我利用以下詞語按順序製作超級無敵大電視的 web page.-->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <title>獎門人 超級無敵大電視</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: radial-gradient(circle at top, #1f2937 0%, #0f172a 55%, #020617 100%);
+      --panel-bg: rgba(15, 23, 42, 0.85);
+      --accent: #fbbf24;
+      --accent-strong: #fcd34d;
+      --text-primary: #f9fafb;
+      --text-muted: #cbd5f5;
+      font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 2vw, 2.5rem);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+    }
+
+    .game-shell {
+      width: min(960px, 100%);
+      background: var(--panel-bg);
+      border-radius: 28px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow:
+        0 25px 65px rgba(2, 6, 23, 0.7),
+        0 0 0 1px rgba(148, 163, 184, 0.15);
+      padding: clamp(1.5rem, 4vw, 3rem);
+      backdrop-filter: blur(14px);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    h1 {
+      margin: 0 0 0.25em;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: clamp(1rem, 3.2vw, 1.2rem);
+      letter-spacing: 0.05em;
+    }
+
+    .screen {
+      position: relative;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow:
+        inset 0 0 30px rgba(30, 64, 175, 0.25),
+        inset 0 0 0 1px rgba(59, 130, 246, 0.15);
+      min-height: clamp(220px, 40vw, 360px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 4vw, 2.5rem);
+      margin-bottom: clamp(1.5rem, 4vw, 2.75rem);
+      text-align: center;
+    }
+
+    .word-display {
+      font-size: clamp(2.4rem, 8vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.1em;
+      word-break: keep-all;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .word-display.fade-out {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    .word-display.fade-in {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .controls {
+      display: grid;
+      gap: clamp(1rem, 3vw, 1.5rem);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-bottom: clamp(1rem, 3vw, 2rem);
+    }
+
+    .controls button {
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: clamp(0.9rem, 3vw, 1.1rem);
+      font-size: clamp(1.05rem, 3.6vw, 1.25rem);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      color: #1f2937;
+      box-shadow:
+        0 18px 30px rgba(251, 191, 36, 0.25),
+        0 0 0 1px rgba(251, 191, 36, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    .controls button:hover,
+    .controls button:focus-visible {
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 35px rgba(251, 191, 36, 0.3),
+        0 0 0 1px rgba(251, 191, 36, 0.45);
+      filter: brightness(1.05);
+      outline: none;
+    }
+
+    .controls button:active {
+      transform: translateY(1px);
+      filter: brightness(0.98);
+    }
+
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 3vw, 1.05rem);
+      letter-spacing: 0.03em;
+    }
+
+    .status-bar span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .bulb {
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 999px;
+      background: #4ade80;
+      box-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
+    }
+
+    @media (max-width: 540px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .controls button {
+        font-size: 1.15rem;
+      }
+
+      .status-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-shell">
+    <header>
+      <h1>獎門人 超級無敵大電視</h1>
+      <p class="subtitle">台上背對大電視，靠台下描述來猜詞！</p>
+    </header>
+
+    <main>
+      <section class="screen" aria-live="polite" aria-atomic="true">
+        <div id="wordDisplay" class="word-display fade-in">按「開始」顯示第一個詞語</div>
+      </section>
+
+      <section class="controls">
+        <button id="nextButton" type="button">開始</button>
+        <button id="resetButton" type="button">重新開始</button>
+      </section>
+
+      <section class="status-bar">
+        <span><span class="bulb"></span>按「空白鍵」或「Enter」也可以跳至下一個詞語</span>
+        <span id="progress">進度：0 / 51</span>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const words = [
+      "乾炒牛河",
+      "迴轉壽司",
+      "老人癡呆",
+      "走光",
+      "猩猩",
+      "水坑尾",
+      "牛肉乾",
+      "賣剩蔗",
+      "黃金",
+      "垃圾桶",
+      "色魔",
+      "求婚",
+      "衛生巾",
+      "生仔",
+      "甘魚佬",
+      "譚詠麟",
+      "胸圍",
+      "草裙舞",
+      "去角質",
+      "滑雪",
+      "賽車",
+      "聖誕老人",
+      "頭暈眼花",
+      "避孕套",
+      "煙花",
+      "飛機場",
+      "啤酒",
+      "拖鞋",
+      "生日快樂",
+      "老鼠仔",
+      "太陽蛋",
+      "賭場",
+      "充電器",
+      "考車牌",
+      "歌唱比賽",
+      "大閘蟹",
+      "打邊爐",
+      "雪櫃",
+      "春夏秋冬",
+      "墨魚丸",
+      "炮仗",
+      "周杰倫",
+      "畢業典禮",
+      "行Catwalk",
+      "公主",
+      "遊戲機",
+      "發達",
+      "潑水節",
+      "頭箍",
+      "美食節",
+      "觀光塔"
+    ];
+
+    const wordDisplay = document.getElementById("wordDisplay");
+    const nextButton = document.getElementById("nextButton");
+    const resetButton = document.getElementById("resetButton");
+    const progress = document.getElementById("progress");
+
+    let currentIndex = -1;
+    let isAnimating = false;
+
+    const updateProgress = () => {
+      const shown = Math.max(0, currentIndex + 1);
+      progress.textContent = `進度：${shown} / ${words.length}`;
+    };
+
+    const showWord = (index) => {
+      if (index < 0 || index >= words.length) return;
+
+      isAnimating = true;
+      wordDisplay.classList.remove("fade-in");
+      wordDisplay.classList.add("fade-out");
+
+      setTimeout(() => {
+        wordDisplay.textContent = words[index];
+        wordDisplay.classList.remove("fade-out");
+        wordDisplay.classList.add("fade-in");
+        isAnimating = false;
+      }, 130);
+    };
+
+    const showNextWord = () => {
+      if (isAnimating) return;
+
+      if (currentIndex < words.length - 1) {
+        currentIndex += 1;
+        showWord(currentIndex);
+        nextButton.textContent = currentIndex === words.length - 1 ? "完成" : "下一個";
+      } else {
+        wordDisplay.textContent = "全部詞語已經完成！🥳";
+        wordDisplay.classList.remove("fade-out");
+        wordDisplay.classList.add("fade-in");
+      }
+      updateProgress();
+    };
+
+    const resetGame = () => {
+      currentIndex = -1;
+      wordDisplay.textContent = "按「開始」顯示第一個詞語";
+      nextButton.textContent = "開始";
+      wordDisplay.classList.add("fade-in");
+      updateProgress();
+    };
+
+    nextButton.addEventListener("click", showNextWord);
+    resetButton.addEventListener("click", resetGame);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.code === "Enter") {
+        event.preventDefault();
+        showNextWord();
+      }
+    });
+
+    updateProgress();
+  </script>
+</body>
+</html>
