@@ -6,7 +6,7 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 ## Party Games
 
 - [1-75 抽號碼 Draw Number](draw75.html)
-- [大電視 Big TV](big-tv.html)
+- [大電視 Big TV](big-tv-2.html)
 
 ## Others
 
