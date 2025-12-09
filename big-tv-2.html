@@ -344,7 +344,7 @@
       "觀光塔"
     ];
 
-    const ROUND_DURATION = 120;
+    const ROUND_DURATION = 20; //TODO: set to 120 seconds
 
     const wordDisplay = document.getElementById("wordDisplay");
     const nextButton = document.getElementById("nextButton");
@@ -529,7 +529,7 @@
         const wordShown = showNextWord();
         hasActiveWord = wordShown;
         updateRoundInfo();
-        resetButton.style.display = "inline-flex";
+        //resetButton.style.display = "inline-flex";
         return;
       }
 
