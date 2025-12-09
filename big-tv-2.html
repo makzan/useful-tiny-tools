@@ -1,0 +1,609 @@
+<!-- Coded by GPT-5-Codex -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <title>獎門人 超級無敵大電視</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: radial-gradient(circle at top, #1f2937 0%, #0f172a 55%, #020617 100%);
+      --panel-bg: rgba(15, 23, 42, 0.85);
+      --accent: #fbbf24;
+      --accent-strong: #fcd34d;
+      --text-primary: #f9fafb;
+      --text-muted: #cbd5f5;
+      --secondary-bg: rgba(148, 163, 184, 0.12);
+      --secondary-border: rgba(148, 163, 184, 0.25);
+      font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: clamp(1rem, 1vw, 2.5rem);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+    }
+
+    .game-shell {
+      width: min(960px, 100%);
+      background: var(--panel-bg);
+      border-radius: 28px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow:
+        0 25px 65px rgba(2, 6, 23, 0.7),
+        0 0 0 1px rgba(148, 163, 184, 0.15);
+      padding: clamp(1.5rem, 2vw, 3rem);
+      backdrop-filter: blur(14px);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    h1 {
+      margin: 0 0 0.25em;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: clamp(1rem, 3.2vw, 1.2rem);
+      letter-spacing: 0.05em;
+    }
+
+    .screen {
+      position: relative;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow:
+        inset 0 0 30px rgba(30, 64, 175, 0.25),
+        inset 0 0 0 1px rgba(59, 130, 246, 0.15);
+      min-height: clamp(60px, 10vw, 360px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 4vw, 2.5rem);
+      margin-bottom: clamp(1.5rem, 4vw, 2.75rem);
+      text-align: center;
+    }
+
+    .word-display {
+      font-size: clamp(2.4rem, 8vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.1em;
+      word-break: keep-all;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .word-display.fade-out {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    .word-display.fade-in {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .controls {
+      display: grid;
+      gap: clamp(1rem, 3vw, 1.5rem);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-bottom: clamp(1rem, 3vw, 2rem);
+    }
+
+    .controls button {
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: clamp(0.9rem, 3vw, 1.1rem);
+      font-size: clamp(1.05rem, 3.6vw, 1.25rem);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      color: #1f2937;
+      box-shadow:
+        0 18px 30px rgba(251, 191, 36, 0.25),
+        0 0 0 1px rgba(251, 191, 36, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    .controls button.btn-secondary {
+      background: var(--secondary-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--secondary-border);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4), inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+      backdrop-filter: blur(6px);
+    }
+
+    .controls button:hover,
+    .controls button:focus-visible {
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 35px rgba(251, 191, 36, 0.3),
+        0 0 0 1px rgba(251, 191, 36, 0.45);
+      filter: brightness(1.05);
+      outline: none;
+    }
+
+    .controls button:active {
+      transform: translateY(1px);
+      filter: brightness(0.98);
+    }
+
+    .controls button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.5;
+      transform: none;
+      filter: grayscale(0.25);
+      box-shadow: none;
+    }
+
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 3vw, 1.05rem);
+      letter-spacing: 0.03em;
+    }
+
+    .status-bar span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .status-bar .timer {
+      color: var(--accent-strong);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .bulb {
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 999px;
+      background: #4ade80;
+      box-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
+    }
+
+    .round-history {
+      margin-top: clamp(1.8rem, 4vw, 2.5rem);
+      padding: clamp(1rem, 3vw, 1.5rem);
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+    }
+
+    .round-history h2 {
+      margin: 0 0 clamp(0.8rem, 2vw, 1.1rem);
+      font-size: clamp(1.15rem, 3.2vw, 1.35rem);
+      letter-spacing: 0.05em;
+      color: var(--accent-strong);
+    }
+
+    .round-history ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .round-history li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      font-size: clamp(0.95rem, 3vw, 1.05rem);
+      color: var(--text-primary);
+    }
+
+    .round-history li span:last-child {
+      color: var(--accent-strong);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .round-history li.round-list-empty {
+      justify-content: center;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    @media (max-width: 540px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .controls button {
+        font-size: 1.15rem;
+      }
+
+      .status-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .round-history li {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .round-history li span:last-child {
+        align-self: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-shell">
+    <main>
+      <section class="screen" aria-live="polite" aria-atomic="true">
+        <div id="wordDisplay" class="word-display fade-in">按「開始」顯示第一個詞語</div>
+      </section>
+
+      <section class="controls">
+        <button id="nextButton" type="button">開始</button>
+        <button id="resetButton" class="btn-secondary" type="button" style="display:none">重新開始</button>
+        <button id="fullscreenButton" class="btn-secondary" type="button">全螢幕</button>
+      </section>
+
+      <section class="status-bar">
+        <span><span class="bulb"></span>按「空白鍵」或「Enter」也可以跳至下一個詞語</span>
+        <span id="progress">進度：0</span>
+        <span id="roundInfo">第 0 回合｜本回合答對：0</span>
+        <span id="timer" class="timer">倒數：準備中</span>
+      </section>
+
+      <section class="round-history" aria-live="polite">
+        <h2>回合紀錄</h2>
+        <ul id="roundList">
+          <li class="round-list-empty">暫無紀錄</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const words = [
+      "乾炒牛河",
+      "迴轉壽司",
+      "老人癡呆",
+      "走光",
+      "猩猩",
+      "水坑尾",
+      "牛肉乾",
+      "賣剩蔗",
+      "黃金",
+      "垃圾桶",
+      "色魔",
+      "求婚",
+      "衛生巾",
+      "生仔",
+      "甘魚佬",
+      "譚詠麟",
+      "胸圍",
+      "草裙舞",
+      "去角質",
+      "滑雪",
+      "賽車",
+      "聖誕老人",
+      "頭暈眼花",
+      "避孕套",
+      "煙花",
+      "飛機場",
+      "啤酒",
+      "拖鞋",
+      "生日快樂",
+      "老鼠仔",
+      "太陽蛋",
+      "賭場",
+      "充電器",
+      "考車牌",
+      "歌唱比賽",
+      "大閘蟹",
+      "打邊爐",
+      "雪櫃",
+      "春夏秋冬",
+      "墨魚丸",
+      "炮仗",
+      "周杰倫",
+      "畢業典禮",
+      "行Catwalk",
+      "公主",
+      "遊戲機",
+      "發達",
+      "潑水節",
+      "頭箍",
+      "美食節",
+      "觀光塔"
+    ];
+
+    const ROUND_DURATION = 120;
+
+    const wordDisplay = document.getElementById("wordDisplay");
+    const nextButton = document.getElementById("nextButton");
+    const resetButton = document.getElementById("resetButton");
+    const progress = document.getElementById("progress");
+    const timerDisplay = document.getElementById("timer");
+    const roundInfo = document.getElementById("roundInfo");
+    const roundList = document.getElementById("roundList");
+
+    let currentIndex = -1;
+    let isAnimating = false;
+    let roundActive = false;
+    let timerInterval = null;
+    let timerRemaining = ROUND_DURATION;
+    let currentRound = 0;
+    let roundCorrect = 0;
+    let hasActiveWord = false;
+    const roundHistoryData = [];
+
+    const updateProgress = () => {
+      const shown = Math.max(0, currentIndex + 1);
+      progress.textContent = `進度：${shown}`;
+    };
+
+    const formatTime = (seconds) => {
+      const m = Math.floor(seconds / 60)
+        .toString()
+        .padStart(2, "0");
+      const s = (seconds % 60)
+        .toString()
+        .padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    const updateTimerDisplay = (message) => {
+      if (message) {
+        timerDisplay.textContent = `倒數：${message}`;
+        return;
+      }
+      if (roundActive) {
+        timerDisplay.textContent = `倒數：${formatTime(timerRemaining)}`;
+      } else {
+        timerDisplay.textContent = "倒數：準備中";
+      }
+    };
+
+    const updateRoundInfo = () => {
+      roundInfo.textContent = `第 ${currentRound} 回合｜本回合答對：${roundCorrect}`;
+    };
+
+    const updateRoundList = () => {
+      roundList.innerHTML = "";
+      if (roundHistoryData.length === 0) {
+        const emptyItem = document.createElement("li");
+        emptyItem.className = "round-list-empty";
+        emptyItem.textContent = "暫無紀錄";
+        roundList.appendChild(emptyItem);
+        return;
+      }
+
+      roundHistoryData.slice().reverse().forEach(({ round, correct, reason }) => {
+        const reasonText =
+          reason === "timeup"
+            ? "時間到"
+            : reason === "completed"
+            ? "全部詞語完成"
+            : "回合結束";
+        const li = document.createElement("li");
+        const roundSpan = document.createElement("span");
+        const resultSpan = document.createElement("span");
+
+        roundSpan.textContent = `第 ${round} 回合`;
+        resultSpan.textContent = `${correct} 題｜${reasonText}`;
+
+        li.appendChild(roundSpan);
+        li.appendChild(resultSpan);
+        roundList.appendChild(li);
+      });
+    };
+
+    const showWord = (index) => {
+      if (index < 0 || index >= words.length) return;
+
+      isAnimating = true;
+      wordDisplay.classList.remove("fade-in");
+      wordDisplay.classList.add("fade-out");
+
+      setTimeout(() => {
+        wordDisplay.textContent = words[index];
+        wordDisplay.classList.remove("fade-out");
+        wordDisplay.classList.add("fade-in");
+        isAnimating = false;
+      }, 130);
+    };
+
+    const showNextWord = () => {
+      if (currentIndex >= words.length - 1) {
+        return false;
+      }
+
+      currentIndex += 1;
+      showWord(currentIndex);
+      nextButton.textContent =
+        currentIndex === words.length - 1 ? "完成" : "答對下一題";
+      updateProgress();
+      return true;
+    };
+
+    const startRound = () => {
+      roundActive = true;
+      currentRound += 1;
+      roundCorrect = 0;
+      hasActiveWord = false;
+      timerRemaining = ROUND_DURATION;
+      updateRoundInfo();
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        timerRemaining -= 1;
+        if (timerRemaining <= 0) {
+          timerRemaining = 0;
+          updateTimerDisplay("時間到");
+          endRound("timeup");
+        } else {
+          updateTimerDisplay();
+        }
+      }, 1000);
+    };
+
+    const endRound = (reason) => {
+      if (!roundActive) return;
+
+      roundActive = false;
+      hasActiveWord = false;
+
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      updateTimerDisplay(reason === "timeup" ? "時間到" : "回合結束");
+      updateRoundInfo();
+
+      roundHistoryData.push({
+        round: currentRound,
+        correct: roundCorrect,
+        reason
+      });
+      updateRoundList();
+
+      if (reason === "timeup") {
+        wordDisplay.classList.remove("fade-out");
+        wordDisplay.classList.add("fade-in");
+        wordDisplay.textContent = "⏰ 時間到！";
+      }
+
+      if (currentIndex >= words.length - 1) {
+        wordDisplay.textContent = "全部詞語已經完成！🥳";
+        wordDisplay.classList.remove("fade-out");
+        wordDisplay.classList.add("fade-in");
+        nextButton.textContent = "全部完成";
+        nextButton.disabled = true;
+      } else {
+        nextButton.textContent = "開始下一回合";
+      }
+    };
+
+    const handleNextAction = () => {
+      if (isAnimating) return;
+
+      if (!roundActive) {
+        if (currentIndex >= words.length - 1) {
+          wordDisplay.textContent = "全部詞語已經完成！🥳";
+          wordDisplay.classList.remove("fade-out");
+          wordDisplay.classList.add("fade-in");
+          nextButton.textContent = "全部完成";
+          nextButton.disabled = true;
+          return;
+        }
+
+        startRound();
+        const wordShown = showNextWord();
+        hasActiveWord = wordShown;
+        updateRoundInfo();
+        resetButton.style.display = "inline-flex";
+        return;
+      }
+
+      if (hasActiveWord) {
+        roundCorrect += 1;
+        updateRoundInfo();
+      }
+
+      if (currentIndex < words.length - 1) {
+        const wordShown = showNextWord();
+        hasActiveWord = wordShown;
+      } else {
+        endRound("completed");
+      }
+    };
+
+    const resetGame = () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      currentIndex = -1;
+      roundActive = false;
+      timerRemaining = ROUND_DURATION;
+      currentRound = 0;
+      roundCorrect = 0;
+      hasActiveWord = false;
+      roundHistoryData.length = 0;
+
+      wordDisplay.textContent = "按「開始」顯示第一個詞語";
+      wordDisplay.classList.remove("fade-out");
+      wordDisplay.classList.add("fade-in");
+
+      nextButton.textContent = "開始";
+      nextButton.disabled = false;
+      updateProgress();
+      updateTimerDisplay();
+      updateRoundInfo();
+      updateRoundList();
+    };
+
+    nextButton.addEventListener("click", handleNextAction);
+    resetButton.addEventListener("click", resetGame);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.code === "Enter") {
+        event.preventDefault();
+        handleNextAction();
+      }
+    });
+
+    // Fullscreen toggle
+    const fullscreenButton = document.getElementById("fullscreenButton");
+
+    const updateFullscreenButton = () => {
+      const isFullscreen = !!document.fullscreenElement;
+      fullscreenButton.textContent = isFullscreen ? "退出全螢幕" : "全螢幕";
+    };
+
+    const toggleFullscreen = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error("Error entering fullscreen:", err);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    fullscreenButton.addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", updateFullscreenButton);
+
+    updateProgress();
+  </script>
+</body>
+</html>
