@@ -19,7 +19,7 @@
         * { box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -251,7 +251,7 @@
     <div class="actions">
         <button class="btn secondary" id="weekToggleBtn" onclick="toggleWeekStart()">Start: Sun</button>
         <button class="btn secondary" onclick="openImportModal()">Import</button>
-        <button class="btn" onclick="exportData()">Export</button>
+        <button class="btn" onclick="exportData()">Export JSON</button>
     </div>
 </header>
 
@@ -266,8 +266,8 @@
             <div class="modal-title">Import Data</div>
             <button class="btn-icon" onclick="closeImportModal()">&times;</button>
         </div>
-        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Paste your export code below:</p>
-        <textarea id="importTextarea" placeholder="Paste encrypted code here..."></textarea>
+        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Paste your JSON data below:</p>
+        <textarea id="importTextarea" placeholder='{"2024-01-01": "Happy New Year!"}'></textarea>
         <div class="actions" style="justify-content: flex-end;">
             <button class="btn secondary" onclick="pasteFromClipboard()">Paste</button>
             <button class="btn" onclick="processImport()">Load Data</button>
@@ -278,51 +278,8 @@
 <div class="toast" id="toast">Message</div>
 
 <script>
-    // --- LZW Compression ---
-    const LZW = {
-        compress: function (uncompressed) {
-            let i, dictionary = {}, c, wc, w = "", result = [], dictSize = 256;
-            for (i = 0; i < 256; i += 1) dictionary[String.fromCharCode(i)] = i;
-            for (i = 0; i < uncompressed.length; i += 1) {
-                c = uncompressed.charAt(i);
-                wc = w + c;
-                if (dictionary.hasOwnProperty(wc)) {
-                    w = wc;
-                } else {
-                    result.push(dictionary[w]);
-                    dictionary[wc] = dictSize++;
-                    w = String(c);
-                }
-            }
-            if (w !== "") result.push(dictionary[w]);
-            return result.map(code => String.fromCharCode(code)).join("");
-        },
-        decompress: function (compressed) {
-            let i, dictionary = [], w, result, k, entry = "", dictSize = 256;
-            for (i = 0; i < 256; i += 1) dictionary[i] = String.fromCharCode(i);
-            w = String.fromCharCode(compressed.charCodeAt(0));
-            result = w;
-            for (i = 1; i < compressed.length; i += 1) {
-                k = compressed.charCodeAt(i);
-                if (dictionary[k]) {
-                    entry = dictionary[k];
-                } else {
-                    if (k === dictSize) {
-                        entry = w + w.charAt(0);
-                    } else {
-                        return null;
-                    }
-                }
-                result += entry;
-                dictionary[dictSize++] = w + entry.charAt(0);
-                w = entry;
-            }
-            return result;
-        }
-    };
-
     // --- State ---
-    const STORAGE_KEY = "year_planner_v2";
+    const STORAGE_KEY = "year_planner_v3_plain";
     const PREF_KEY_WEEK = "year_planner_week_start";
     
     let currentYear = new Date().getFullYear();
@@ -332,6 +289,9 @@
 
     // --- Init ---
     function init() {
+        // Migration check: check if old data exists, if so, try to load it
+        // (Optional: You could add logic here to migrate old compressed data if needed, 
+        // but for now we start fresh or load existing plain data)
         loadData();
         loadPrefs();
         document.getElementById('currentYearDisplay').innerText = currentYear;
@@ -342,7 +302,12 @@
     function loadData() {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-            try { plannerData = JSON.parse(stored); } catch (e) { console.error(e); }
+            try { 
+                plannerData = JSON.parse(stored); 
+            } catch (e) { 
+                console.error("Data load error", e); 
+                plannerData = {};
+            }
         }
     }
 
@@ -481,26 +446,29 @@
     }
 
     // --- Import/Export ---
+    
+    // NEW: No compression. Just pure JSON stringify.
     function exportData() {
         try {
+            // Convert data object directly to JSON string
             const jsonString = JSON.stringify(plannerData);
-            const compressed = LZW.compress(jsonString);
-            const base64 = btoa(compressed);
             
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(base64).then(() => {
-                    showToast("Data Copied to Clipboard!");
+                navigator.clipboard.writeText(jsonString).then(() => {
+                    showToast("JSON Data Copied to Clipboard!");
                 }).catch(() => {
-                    prompt("Copy this code:", base64);
+                    // Fallback manual copy
+                    prompt("Copy this JSON data:", jsonString);
                 });
             } else {
+                // Fallback for older browsers
                 const ta = document.createElement('textarea');
-                ta.value = base64;
+                ta.value = jsonString;
                 document.body.appendChild(ta);
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                showToast("Data Copied!");
+                showToast("JSON Data Copied!");
             }
         } catch(e) {
             alert("Export error: " + e);
@@ -531,21 +499,20 @@
         if(!raw) return;
 
         try {
-            const compressed = atob(raw);
-            const json = LZW.decompress(compressed);
-            const data = JSON.parse(json);
+            // NEW: Directly parse JSON. No decompression steps.
+            const data = JSON.parse(raw);
 
-            if(typeof data !== 'object') throw new Error("Invalid");
+            if(typeof data !== 'object') throw new Error("Invalid format");
 
-            if(confirm("Overwrite current calendar data?")) {
+            if(confirm("This will overwrite your current calendar with the imported data. Continue?")) {
                 plannerData = data;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerData));
                 renderCalendar();
                 closeImportModal();
-                showToast("Data Loaded!");
+                showToast("Data Loaded Successfully!");
             }
         } catch(e) {
-            alert("Invalid data code. Import failed.");
+            alert("Import failed. Ensure you pasted valid JSON data.\nError: " + e.message);
         }
     }
 
