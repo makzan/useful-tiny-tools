@@ -32,7 +32,7 @@
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 15px 25px;
+            padding: 15px 5px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -86,7 +86,7 @@
         /* Calendar Layout */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
             gap: 25px;
             padding-bottom: 50px;
         }
@@ -240,7 +240,6 @@
 <body>
 
 <header>
-    <h1>📅 Yearly Planner</h1>
     
     <div class="year-controls">
         <button class="btn-icon" onclick="changeYear(-1)">&#9664;</button>
