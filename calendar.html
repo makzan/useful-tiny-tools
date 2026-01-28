@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year Planner</title>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --text-color: #334155;
+            --card-bg: #ffffff;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --border: #cbd5e1;
+            --weekend: #f8fafc;
+            --today-border: #f59e0b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; min-width: 200px; }
+        
+        .year-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .btn-icon {
+            background: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover { background-color: var(--bg-color); border-color: var(--border); }
+
+        .actions { display: flex; gap: 10px; align-items: center; }
+
+        button.btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        button.btn:hover { background-color: var(--primary-hover); }
+        button.btn.secondary { background-color: white; color: var(--text-color); border: 1px solid var(--border); }
+        button.btn.secondary:hover { background-color: var(--weekend); }
+
+        /* Calendar Layout */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            padding-bottom: 50px;
+        }
+
+        .month-block {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .month-header {
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* The Grid inside a month */
+        .days-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-left: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .day-label {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #64748b;
+            padding: 5px 0;
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .day-cell {
+            position: relative;
+            height: 100px;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .day-cell.empty { background: #f9f9f9; pointer-events: none; }
+        .day-cell.weekend { background-color: #fafafa; }
+
+        .day-number {
+            font-size: 0.75rem;
+            padding: 4px 6px;
+            color: #94a3b8;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .day-cell.today {
+            background-color: #fffbeb; 
+        }
+        .day-cell.today .day-number {
+            color: #d97706;
+            font-weight: 800;
+        }
+
+        /* The Input Area */
+        .day-input {
+            flex: 1;
+            border: none;
+            resize: none;
+            width: 100%;
+            padding: 4px 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            background: transparent;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+        .day-input:focus {
+            outline: none;
+            background-color: #f0f9ff;
+        }
+        .day-input::placeholder { color: #e2e8f0; font-style: italic; }
+
+        /* Import Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .modal-title { font-weight: bold; font-size: 1.2rem; }
+        
+        #importTextarea {
+            width: 100%; height: 120px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 200;
+        }
+        .toast.show { opacity: 1; }
+        
+        @media (max-width: 600px) {
+            header { flex-direction: column; align-items: stretch; text-align: center; }
+            h1 { justify-content: center; }
+            .year-controls { justify-content: center; }
+            .actions { justify-content: center; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📅 Yearly Planner</h1>
+    
+    <div class="year-controls">
+        <button class="btn-icon" onclick="changeYear(-1)">&#9664;</button>
+        <span id="currentYearDisplay">2024</span>
+        <button class="btn-icon" onclick="changeYear(1)">&#9654;</button>
+    </div>
+
+    <div class="actions">
+        <button class="btn secondary" id="weekToggleBtn" onclick="toggleWeekStart()">Start: Sun</button>
+        <button class="btn secondary" onclick="openImportModal()">Import</button>
+        <button class="btn" onclick="exportData()">Export</button>
+    </div>
+</header>
+
+<div class="calendar-grid" id="calendarGrid">
+    <!-- Grid generated by JS -->
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Import Data</div>
+            <button class="btn-icon" onclick="closeImportModal()">&times;</button>
+        </div>
+        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Paste your export code below:</p>
+        <textarea id="importTextarea" placeholder="Paste encrypted code here..."></textarea>
+        <div class="actions" style="justify-content: flex-end;">
+            <button class="btn secondary" onclick="pasteFromClipboard()">Paste</button>
+            <button class="btn" onclick="processImport()">Load Data</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">Message</div>
+
+<script>
+    // --- LZW Compression ---
+    const LZW = {
+        compress: function (uncompressed) {
+            let i, dictionary = {}, c, wc, w = "", result = [], dictSize = 256;
+            for (i = 0; i < 256; i += 1) dictionary[String.fromCharCode(i)] = i;
+            for (i = 0; i < uncompressed.length; i += 1) {
+                c = uncompressed.charAt(i);
+                wc = w + c;
+                if (dictionary.hasOwnProperty(wc)) {
+                    w = wc;
+                } else {
+                    result.push(dictionary[w]);
+                    dictionary[wc] = dictSize++;
+                    w = String(c);
+                }
+            }
+            if (w !== "") result.push(dictionary[w]);
+            return result.map(code => String.fromCharCode(code)).join("");
+        },
+        decompress: function (compressed) {
+            let i, dictionary = [], w, result, k, entry = "", dictSize = 256;
+            for (i = 0; i < 256; i += 1) dictionary[i] = String.fromCharCode(i);
+            w = String.fromCharCode(compressed.charCodeAt(0));
+            result = w;
+            for (i = 1; i < compressed.length; i += 1) {
+                k = compressed.charCodeAt(i);
+                if (dictionary[k]) {
+                    entry = dictionary[k];
+                } else {
+                    if (k === dictSize) {
+                        entry = w + w.charAt(0);
+                    } else {
+                        return null;
+                    }
+                }
+                result += entry;
+                dictionary[dictSize++] = w + entry.charAt(0);
+                w = entry;
+            }
+            return result;
+        }
+    };
+
+    // --- State ---
+    const STORAGE_KEY = "year_planner_v2";
+    const PREF_KEY_WEEK = "year_planner_week_start";
+    
+    let currentYear = new Date().getFullYear();
+    let plannerData = {}; 
+    let saveTimeout = null;
+    let weekStart = 0; // 0 = Sunday, 1 = Monday
+
+    // --- Init ---
+    function init() {
+        loadData();
+        loadPrefs();
+        document.getElementById('currentYearDisplay').innerText = currentYear;
+        updateWeekBtnLabel();
+        renderCalendar();
+    }
+
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try { plannerData = JSON.parse(stored); } catch (e) { console.error(e); }
+        }
+    }
+
+    function loadPrefs() {
+        const stored = localStorage.getItem(PREF_KEY_WEEK);
+        if (stored !== null) {
+            weekStart = parseInt(stored);
+        }
+    }
+
+    function toggleWeekStart() {
+        weekStart = weekStart === 0 ? 1 : 0;
+        localStorage.setItem(PREF_KEY_WEEK, weekStart);
+        updateWeekBtnLabel();
+        renderCalendar();
+    }
+
+    function updateWeekBtnLabel() {
+        const btn = document.getElementById('weekToggleBtn');
+        btn.innerText = weekStart === 0 ? "Start: Sun" : "Start: Mon";
+    }
+
+    // Debounced Save
+    function handleInput(dateKey, value) {
+        if (value.trim() === "") {
+            delete plannerData[dateKey];
+        } else {
+            plannerData[dateKey] = value;
+        }
+
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerData));
+        }, 500);
+    }
+
+    // --- Rendering ---
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        const today = new Date();
+
+        // Configure Day Labels based on preference
+        const weekDays = weekStart === 0 
+            ? ["S","M","T","W","T","F","S"] 
+            : ["M","T","W","T","F","S","S"];
+
+        months.forEach((monthName, mIndex) => {
+            const monthBlock = document.createElement('div');
+            monthBlock.className = 'month-block';
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'month-header';
+            header.innerText = monthName;
+            monthBlock.appendChild(header);
+
+            // Days Container
+            const daysContainer = document.createElement('div');
+            daysContainer.className = 'days-container';
+
+            // Weekday labels
+            weekDays.forEach(d => {
+                const lb = document.createElement('div');
+                lb.className = 'day-label';
+                lb.innerText = d;
+                daysContainer.appendChild(lb);
+            });
+
+            // Calculate dates
+            const daysInMonth = new Date(currentYear, mIndex + 1, 0).getDate();
+            let firstDayIndex = new Date(currentYear, mIndex, 1).getDay(); // 0 (Sun) to 6 (Sat)
+
+            // Adjust offset based on week start
+            if (weekStart === 1) {
+                // If starts on Mon (1), real Sunday (0) needs to be offset 6
+                // Mon (1) -> 0, Tue (2) -> 1 ... Sun (0) -> 6
+                firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+            }
+
+            // Empty slots
+            for(let i=0; i<firstDayIndex; i++){
+                const empty = document.createElement('div');
+                empty.className = 'day-cell empty';
+                daysContainer.appendChild(empty);
+            }
+
+            // Days
+            for(let d=1; d<=daysInMonth; d++){
+                const dateKey = `${currentYear}-${String(mIndex+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                
+                const cell = document.createElement('div');
+                cell.className = 'day-cell';
+                
+                // Determine weekend/today
+                const dayOfWeek = new Date(currentYear, mIndex, d).getDay(); // Always 0=Sun, 6=Sat
+                
+                if(dayOfWeek === 0 || dayOfWeek === 6) cell.classList.add('weekend');
+                
+                if(currentYear === today.getFullYear() && mIndex === today.getMonth() && d === today.getDate()) {
+                    cell.classList.add('today');
+                }
+
+                // Date Number
+                const num = document.createElement('div');
+                num.className = 'day-number';
+                num.innerText = d;
+                cell.appendChild(num);
+
+                // Input Area
+                const input = document.createElement('textarea');
+                input.className = 'day-input';
+                input.value = plannerData[dateKey] || '';
+                input.spellcheck = false;
+                
+                // Event listener
+                input.addEventListener('input', (e) => {
+                    handleInput(dateKey, e.target.value);
+                });
+
+                cell.appendChild(input);
+                daysContainer.appendChild(cell);
+            }
+
+            monthBlock.appendChild(daysContainer);
+            grid.appendChild(monthBlock);
+        });
+    }
+
+    function changeYear(offset) {
+        currentYear += offset;
+        document.getElementById('currentYearDisplay').innerText = currentYear;
+        renderCalendar();
+    }
+
+    // --- Import/Export ---
+    function exportData() {
+        try {
+            const jsonString = JSON.stringify(plannerData);
+            const compressed = LZW.compress(jsonString);
+            const base64 = btoa(compressed);
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(base64).then(() => {
+                    showToast("Data Copied to Clipboard!");
+                }).catch(() => {
+                    prompt("Copy this code:", base64);
+                });
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = base64;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast("Data Copied!");
+            }
+        } catch(e) {
+            alert("Export error: " + e);
+        }
+    }
+
+    function openImportModal() {
+        document.getElementById('importModal').classList.add('open');
+        document.getElementById('importTextarea').value = '';
+        setTimeout(() => document.getElementById('importTextarea').focus(), 100);
+    }
+    
+    function closeImportModal() {
+        document.getElementById('importModal').classList.remove('open');
+    }
+
+    async function pasteFromClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            document.getElementById('importTextarea').value = text;
+        } catch(e) {
+            showToast("Clipboard blocked. Use Ctrl+V");
+        }
+    }
+
+    function processImport() {
+        const raw = document.getElementById('importTextarea').value.trim();
+        if(!raw) return;
+
+        try {
+            const compressed = atob(raw);
+            const json = LZW.decompress(compressed);
+            const data = JSON.parse(json);
+
+            if(typeof data !== 'object') throw new Error("Invalid");
+
+            if(confirm("Overwrite current calendar data?")) {
+                plannerData = data;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerData));
+                renderCalendar();
+                closeImportModal();
+                showToast("Data Loaded!");
+            }
+        } catch(e) {
+            alert("Invalid data code. Import failed.");
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    init();
+</script>
+</body>
+</html>
+
+
