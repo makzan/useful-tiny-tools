@@ -235,6 +235,11 @@
             .year-controls { justify-content: center; }
             .actions { justify-content: center; flex-wrap: wrap; }
         }
+
+        textarea:not(:placeholder-shown) {
+            background: #ffffec;
+        }
+        
     </style>
 </head>
 <body>
@@ -423,6 +428,7 @@
                 input.className = 'day-input';
                 input.value = plannerData[dateKey] || '';
                 input.spellcheck = false;
+                input.placeholder = ".";
                 
                 // Event listener
                 input.addEventListener('input', (e) => {
