@@ -28,3 +28,4 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 ## Photo Tools
 
 - [Photo Stitcher](photo-stick.html)
+- [Images Resize](images-resize.html)
