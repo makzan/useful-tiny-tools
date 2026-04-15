@@ -16,6 +16,8 @@
       --bg-soft: #f7f7f7;
       --ink: #222;
       --muted: #666;
+      --font-ui: "Avenir Next", "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      --font-time: "Avenir Next", "SF Pro Display", "Helvetica Neue", "Segoe UI", "Noto Sans TC", sans-serif;
       --left-gap: clamp(1.2rem, 8vw, 8rem);
       --time-size: clamp(3rem, 11vw, 8.6rem);
       color-scheme: only light;
@@ -39,7 +41,10 @@
       background:
         radial-gradient(circle at 20% 20%, var(--bg-soft) 0%, var(--bg) 48%, #e8e8e8 100%);
       color: var(--ink);
-      font-family: "Avenir Next", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-family: var(--font-ui);
+      font-weight: 450;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
       overflow: hidden;
     }
 
@@ -72,6 +77,8 @@
       border: 1px solid rgba(34, 34, 34, 0.16);
       background: rgba(255, 255, 255, 0.52);
       color: var(--ink);
+      font-family: var(--font-ui);
+      font-weight: 560;
       border-radius: 999px;
       padding: 0.5rem 0.9rem;
       font-size: clamp(0.72rem, 1.2vw, 0.86rem);
@@ -107,6 +114,7 @@
     .label {
       font-size: clamp(0.74rem, 1.2vw, 0.95rem);
       letter-spacing: 0.18em;
+      font-weight: 600;
       text-transform: uppercase;
       color: var(--muted);
       opacity: 0.85;
@@ -116,11 +124,14 @@
     .time {
       margin: 0;
       font-size: var(--time-size);
-      line-height: 0.95;
-      letter-spacing: 0.04em;
-      font-weight: 500;
+      line-height: 0.92;
+      letter-spacing: -1px;
+      font-family: var(--font-time);
+      font-weight: 800;
+      font-variation-settings: "wght" 800;
       color: var(--ink);
       font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
       text-wrap: nowrap;
       transition: opacity 160ms ease;
       text-shadow: 0 12px 30px rgba(34, 34, 34, 0.06);
@@ -134,6 +145,7 @@
       margin-top: clamp(0.6rem, 1.8vw, 1.1rem);
       font-size: clamp(0.85rem, 1.3vw, 1.04rem);
       letter-spacing: 0.03em;
+      font-weight: 520;
       color: var(--muted);
       opacity: 0.88;
     }
