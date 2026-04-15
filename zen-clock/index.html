@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#efefef" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#efefef" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#222222" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Zen Clock" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -14,13 +15,37 @@
     :root {
       --bg: #efefef;
       --bg-soft: #f7f7f7;
+      --bg-deep: #e8e8e8;
       --ink: #222;
       --muted: #666;
+      --grain: rgba(255, 255, 255, 0.14);
+      --btn-border: rgba(34, 34, 34, 0.16);
+      --btn-bg: rgba(255, 255, 255, 0.52);
+      --btn-bg-hover: rgba(255, 255, 255, 0.78);
+      --btn-border-hover: rgba(34, 34, 34, 0.3);
+      --time-shadow: rgba(34, 34, 34, 0.06);
       --font-ui: "Avenir Next", "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
       --font-time: "Avenir Next", "SF Pro Display", "Helvetica Neue", "Segoe UI", "Noto Sans TC", sans-serif;
       --left-gap: clamp(1.2rem, 8vw, 8rem);
       --time-size: clamp(3rem, 11vw, 8.6rem);
-      color-scheme: only light;
+      color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        /* Swap foreground/background for dark mode */
+        --bg: #222;
+        --bg-soft: #2f2f2f;
+        --bg-deep: #171717;
+        --ink: #efefef;
+        --muted: #c2c2c2;
+        --grain: rgba(255, 255, 255, 0.08);
+        --btn-border: rgba(239, 239, 239, 0.28);
+        --btn-bg: rgba(34, 34, 34, 0.6);
+        --btn-bg-hover: rgba(34, 34, 34, 0.85);
+        --btn-border-hover: rgba(239, 239, 239, 0.44);
+        --time-shadow: rgba(0, 0, 0, 0.42);
+      }
     }
 
     * {
@@ -39,7 +64,7 @@
       align-items: center;
       justify-content: flex-start;
       background:
-        radial-gradient(circle at 20% 20%, var(--bg-soft) 0%, var(--bg) 48%, #e8e8e8 100%);
+        radial-gradient(circle at 20% 20%, var(--bg-soft) 0%, var(--bg) 48%, var(--bg-deep) 100%);
       color: var(--ink);
       font-family: var(--font-ui);
       font-weight: 450;
@@ -55,7 +80,7 @@
       background:
         repeating-linear-gradient(
           120deg,
-          rgba(255, 255, 255, 0.14) 0 2px,
+          var(--grain) 0 2px,
           transparent 2px 16px
         );
       opacity: 0.2;
@@ -74,8 +99,8 @@
 
     .fullscreen-btn {
       appearance: none;
-      border: 1px solid rgba(34, 34, 34, 0.16);
-      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
       color: var(--ink);
       font-family: var(--font-ui);
       font-weight: 560;
@@ -91,8 +116,8 @@
 
     .fullscreen-btn:hover,
     .fullscreen-btn:focus-visible {
-      background: rgba(255, 255, 255, 0.78);
-      border-color: rgba(34, 34, 34, 0.3);
+      background: var(--btn-bg-hover);
+      border-color: var(--btn-border-hover);
       outline: none;
     }
 
@@ -135,7 +160,7 @@
       font-feature-settings: "tnum" 1, "lnum" 1;
       text-wrap: nowrap;
       transition: opacity 160ms ease;
-      text-shadow: 0 12px 30px rgba(34, 34, 34, 0.06);
+      text-shadow: 0 12px 30px var(--time-shadow);
     }
 
     .time.tick {
