@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#efefef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Zen Clock" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/zen-clock-icon.svg" />
+  <title>Zen Clock</title>
+  <style>
+    :root {
+      --bg: #efefef;
+      --bg-soft: #f7f7f7;
+      --ink: #222;
+      --muted: #666;
+      --left-gap: clamp(1.2rem, 8vw, 8rem);
+      --time-size: clamp(3rem, 11vw, 8.6rem);
+      color-scheme: only light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      background:
+        radial-gradient(circle at 20% 20%, var(--bg-soft) 0%, var(--bg) 48%, #e8e8e8 100%);
+      color: var(--ink);
+      font-family: "Avenir Next", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0.14) 0 2px,
+          transparent 2px 16px
+        );
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .action-bar {
+      position: fixed;
+      top: clamp(0.75rem, 1.8vw, 1.2rem);
+      right: clamp(0.75rem, 1.8vw, 1.2rem);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .fullscreen-btn {
+      appearance: none;
+      border: 1px solid rgba(34, 34, 34, 0.16);
+      background: rgba(255, 255, 255, 0.52);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 0.5rem 0.9rem;
+      font-size: clamp(0.72rem, 1.2vw, 0.86rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .fullscreen-btn:hover,
+    .fullscreen-btn:focus-visible {
+      background: rgba(255, 255, 255, 0.78);
+      border-color: rgba(34, 34, 34, 0.3);
+      outline: none;
+    }
+
+    .fullscreen-btn:active {
+      opacity: 0.72;
+    }
+
+    body.is-fullscreen .fullscreen-btn {
+      opacity: 0.45;
+    }
+
+    .clock-shell {
+      position: relative;
+      margin-left: var(--left-gap);
+      max-width: min(90vw, 960px);
+      animation: settle-in 680ms cubic-bezier(0.19, 1, 0.22, 1) both;
+    }
+
+    .label {
+      font-size: clamp(0.74rem, 1.2vw, 0.95rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.85;
+      margin-bottom: clamp(0.45rem, 1.6vw, 0.9rem);
+    }
+
+    .time {
+      margin: 0;
+      font-size: var(--time-size);
+      line-height: 0.95;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      text-wrap: nowrap;
+      transition: opacity 160ms ease;
+      text-shadow: 0 12px 30px rgba(34, 34, 34, 0.06);
+    }
+
+    .time.tick {
+      opacity: 0.82;
+    }
+
+    .meta {
+      margin-top: clamp(0.6rem, 1.8vw, 1.1rem);
+      font-size: clamp(0.85rem, 1.3vw, 1.04rem);
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      opacity: 0.88;
+    }
+
+    @keyframes settle-in {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 720px) {
+      :root {
+        --left-gap: clamp(1rem, 6vw, 2rem);
+        --time-size: clamp(2.4rem, 15vw, 5rem);
+      }
+
+      .clock-shell {
+        max-width: 95vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="action-bar">
+    <button id="fullscreenBtn" class="fullscreen-btn" type="button" aria-pressed="false">Full Screen</button>
+  </div>
+
+  <main class="clock-shell" aria-live="polite" aria-label="Current time">
+    <div class="label">Current Time</div>
+    <h1 id="time" class="time">00:00:00</h1>
+    <div id="meta" class="meta">Loading...</div>
+  </main>
+
+  <script>
+    const timeEl = document.getElementById("time");
+    const metaEl = document.getElementById("meta");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+    const timeFormatter = new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+
+    const dateFormatter = new Intl.DateTimeFormat(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+
+    const zoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local Time";
+
+    function hasFullscreenElement() {
+      return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    function syncFullscreenState() {
+      const active = hasFullscreenElement();
+      document.body.classList.toggle("is-fullscreen", active);
+      fullscreenBtn.textContent = active ? "Exit Full Screen" : "Full Screen";
+      fullscreenBtn.setAttribute("aria-pressed", String(active));
+    }
+
+    async function enterFullscreen() {
+      const root = document.documentElement;
+
+      if (root.requestFullscreen) {
+        await root.requestFullscreen();
+        return;
+      }
+
+      if (root.webkitRequestFullscreen) {
+        root.webkitRequestFullscreen();
+      }
+    }
+
+    async function exitFullscreen() {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+
+    async function toggleFullscreen() {
+      try {
+        if (hasFullscreenElement()) {
+          await exitFullscreen();
+        } else {
+          await enterFullscreen();
+        }
+      } catch (error) {
+        console.error("Fullscreen toggle failed:", error);
+      } finally {
+        syncFullscreenState();
+      }
+    }
+
+    function paintClock() {
+      const now = new Date();
+      const shownTime = timeFormatter.format(now);
+
+      timeEl.classList.add("tick");
+      timeEl.textContent = shownTime;
+      metaEl.textContent = `${dateFormatter.format(now)} · ${zoneLabel}`;
+      document.title = `${shownTime} · Zen Clock`;
+
+      window.setTimeout(() => {
+        timeEl.classList.remove("tick");
+      }, 160);
+
+      const delay = 1000 - now.getMilliseconds();
+      window.setTimeout(paintClock, delay);
+    }
+
+    fullscreenBtn.addEventListener("click", toggleFullscreen);
+
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    document.addEventListener("webkitfullscreenchange", syncFullscreenState);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key.toLowerCase() !== "f" || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      event.preventDefault();
+      toggleFullscreen();
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
+      });
+    }
+
+    syncFullscreenState();
+    paintClock();
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "Zen Clock",
+  "short_name": "Zen Clock",
+  "description": "A minimalist left-aligned clock with subtle zen styling.",
+  "lang": "zh-Hant",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#efefef",
+  "theme_color": "#efefef",
+  "icons": [
+    {
+      "src": "./icons/zen-clock-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/zen-clock-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 - [Learning how to Learn deck](https://mak.la/learn)
 - [Count-down Timer](https://mak.la/15m)
 - [Calendar](calendar.html)
+- [Zen Clock](zen-clock/)
 
 ## Others (AI)
 

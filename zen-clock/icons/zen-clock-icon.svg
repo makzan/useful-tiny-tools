@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Zen Clock Icon</title>
+  <desc id="desc">Minimal clock icon for Zen Clock PWA.</desc>
+  <rect width="512" height="512" rx="110" fill="#efefef" />
+  <rect x="56" y="56" width="400" height="400" rx="88" fill="#f7f7f7" stroke="#d7d7d7" stroke-width="6" />
+  <g fill="none" stroke="#222" stroke-linecap="round">
+    <path d="M132 216h248" stroke-width="8" opacity="0.18" />
+    <path d="M132 292h248" stroke-width="8" opacity="0.18" />
+    <path d="M148 256h216" stroke-width="26" />
+  </g>
+  <circle cx="374" cy="256" r="14" fill="#222" />
+</svg>
