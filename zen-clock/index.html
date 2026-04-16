@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#efefef" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f7f7" />
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#222222" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Zen Clock" />
@@ -13,17 +13,26 @@
   <title>Zen Clock</title>
   <style>
     :root {
-      --bg: #efefef;
-      --bg-soft: #f7f7f7;
-      --bg-deep: #e8e8e8;
+      --bg: #f7f7f7;
+      --bg-soft: #fcfcfc;
+      --bg-deep: #f3f3f3;
       --ink: #222;
       --muted: #666;
-      --countdown-block-bg: rgba(249, 249, 249, 0.74);
-      --countdown-block-border: rgba(34, 34, 34, 0.08);
-      --countdown-block-shadow: rgba(34, 34, 34, 0.08);
-      --countdown-input-bg: rgba(255, 255, 255, 0.82);
-      --countdown-input-border: rgba(34, 34, 34, 0.13);
-      --countdown-input-border-focus: rgba(34, 34, 34, 0.3);
+      --countdown-block-bg: rgba(253, 253, 253, 0.9);
+      --countdown-block-border: rgba(34, 34, 34, 0.06);
+      --countdown-block-shadow: rgba(34, 34, 34, 0.05);
+      --countdown-input-bg: rgba(255, 255, 255, 0.96);
+      --countdown-input-border: rgba(34, 34, 34, 0.11);
+      --countdown-input-border-focus: rgba(34, 34, 34, 0.26);
+      --countdown-display-hover: rgba(34, 34, 34, 0.035);
+      --countdown-link: rgba(34, 34, 34, 0.52);
+      --countdown-link-hover: rgba(34, 34, 34, 0.84);
+      --countdown-action-bg: rgba(34, 34, 34, 0.08);
+      --countdown-action-bg-hover: rgba(34, 34, 34, 0.12);
+      --countdown-action-primary-bg: #222;
+      --countdown-action-primary-ink: #f5f5f5;
+      --countdown-danger: #a94141;
+      --countdown-danger-bg: rgba(169, 65, 65, 0.12);
       --grain: rgba(255, 255, 255, 0.14);
       --btn-border: rgba(34, 34, 34, 0.16);
       --btn-bg: rgba(255, 255, 255, 0.52);
@@ -51,6 +60,15 @@
         --countdown-input-bg: rgba(34, 34, 34, 0.65);
         --countdown-input-border: rgba(239, 239, 239, 0.24);
         --countdown-input-border-focus: rgba(239, 239, 239, 0.46);
+        --countdown-display-hover: rgba(239, 239, 239, 0.08);
+        --countdown-link: rgba(239, 239, 239, 0.56);
+        --countdown-link-hover: rgba(239, 239, 239, 0.9);
+        --countdown-action-bg: rgba(239, 239, 239, 0.12);
+        --countdown-action-bg-hover: rgba(239, 239, 239, 0.2);
+        --countdown-action-primary-bg: #efefef;
+        --countdown-action-primary-ink: #222;
+        --countdown-danger: #ff9b9b;
+        --countdown-danger-bg: rgba(255, 155, 155, 0.17);
         --grain: rgba(255, 255, 255, 0.08);
         --btn-border: rgba(239, 239, 239, 0.28);
         --btn-bg: rgba(34, 34, 34, 0.6);
@@ -62,6 +80,10 @@
 
     * {
       box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     html,
@@ -191,18 +213,56 @@
       opacity: 0.88;
     }
 
+    .countdown-area {
+      max-width: min(82vw, 680px);
+    }
+
+    .countdown-open-link {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      color: var(--countdown-link);
+      font-family: var(--font-ui);
+      font-size: clamp(0.72rem, 1.05vw, 0.84rem);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 560;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+      cursor: pointer;
+      transition: color 160ms ease, opacity 160ms ease;
+    }
+
+    .countdown-open-link:hover,
+    .countdown-open-link:focus-visible {
+      color: var(--countdown-link-hover);
+      outline: none;
+    }
+
+    .countdown-open-link:active {
+      opacity: 0.7;
+    }
+
     .countdown-block {
       background: var(--countdown-block-bg);
       border: 1px solid var(--countdown-block-border);
       border-radius: clamp(1rem, 2.8vw, 1.4rem);
-      padding: clamp(1rem, 2.8vw, 1.6rem);
-      max-width: min(82vw, 680px);
-      box-shadow: 0 16px 42px -30px var(--countdown-block-shadow);
-      backdrop-filter: blur(3px);
+      padding: clamp(0.95rem, 2.7vw, 1.45rem);
+      box-shadow: 0 20px 50px -36px var(--countdown-block-shadow);
+      backdrop-filter: blur(4px);
+      transition: border-color 160ms ease, box-shadow 180ms ease;
+    }
+
+    .countdown-block.is-editing {
+      border-color: var(--countdown-input-border-focus);
+      box-shadow: 0 20px 56px -34px var(--countdown-block-shadow);
     }
 
     .countdown-label {
-      margin-bottom: clamp(0.8rem, 2.2vw, 1rem);
+      margin-bottom: clamp(0.6rem, 1.8vw, 0.9rem);
       font-size: clamp(0.66rem, 1vw, 0.8rem);
       letter-spacing: 0.2em;
       font-weight: 620;
@@ -211,12 +271,28 @@
       opacity: 0.84;
     }
 
+    .countdown-display {
+      border-radius: 0.82rem;
+      margin: 0 -0.42rem;
+      padding: 0.22rem 0.42rem 0.38rem;
+      cursor: pointer;
+      transition: background 160ms ease, opacity 160ms ease;
+    }
+
+    .countdown-display:hover,
+    .countdown-display:focus-visible {
+      background: var(--countdown-display-hover);
+      outline: none;
+    }
+
     .countdown-controls {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
       gap: clamp(0.7rem, 2vw, 1.15rem);
-      margin-bottom: clamp(1rem, 2.6vw, 1.45rem);
+      margin-top: clamp(0.75rem, 2.1vw, 1rem);
+      padding-top: clamp(0.72rem, 2vw, 0.95rem);
+      border-top: 1px dashed var(--countdown-block-border);
     }
 
     .countdown-field {
@@ -254,9 +330,63 @@
       transition: border-color 160ms ease, background 160ms ease;
     }
 
+    .countdown-field input::placeholder {
+      color: var(--muted);
+      opacity: 0.62;
+    }
+
     .countdown-field input:focus-visible {
       outline: none;
       border-color: var(--countdown-input-border-focus);
+    }
+
+    .countdown-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.58rem;
+      flex: 1 1 100%;
+    }
+
+    .countdown-action-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.42rem 0.86rem;
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      font-weight: 620;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: var(--countdown-action-bg);
+      cursor: pointer;
+      transition: background 150ms ease, opacity 150ms ease;
+    }
+
+    .countdown-action-btn:hover,
+    .countdown-action-btn:focus-visible {
+      background: var(--countdown-action-bg-hover);
+      outline: none;
+    }
+
+    .countdown-action-btn:active {
+      opacity: 0.76;
+    }
+
+    .countdown-action-btn.primary {
+      background: var(--countdown-action-primary-bg);
+      color: var(--countdown-action-primary-ink);
+    }
+
+    .countdown-action-btn.primary:hover,
+    .countdown-action-btn.primary:focus-visible {
+      opacity: 0.9;
+    }
+
+    .countdown-action-btn.danger {
+      color: var(--countdown-danger);
+      background: var(--countdown-danger-bg);
     }
 
     .countdown-value {
@@ -274,7 +404,7 @@
     }
 
     .countdown-meta {
-      margin: clamp(0.62rem, 1.8vw, 0.92rem) 0 0;
+      margin: clamp(0.55rem, 1.6vw, 0.82rem) 0 0;
       font-size: clamp(0.78rem, 1.2vw, 0.92rem);
       letter-spacing: 0.02em;
       font-weight: 520;
@@ -284,6 +414,10 @@
 
     .countdown-block.is-warning .countdown-value {
       opacity: 0.76;
+    }
+
+    .countdown-block.is-warning .countdown-meta {
+      color: var(--countdown-danger);
     }
 
     @keyframes settle-in {
@@ -314,6 +448,11 @@
         max-width: 100%;
       }
 
+      .countdown-display {
+        margin: 0 -0.2rem;
+        padding: 0.2rem;
+      }
+
       .countdown-controls {
         flex-direction: column;
         align-items: stretch;
@@ -323,6 +462,15 @@
       .countdown-field-time {
         min-width: 0;
         flex: 1 1 auto;
+      }
+
+      .countdown-actions {
+        width: 100%;
+      }
+
+      .countdown-action-btn {
+        flex: 1 1 0;
+        text-align: center;
       }
     }
   </style>
@@ -339,20 +487,32 @@
       <div id="meta" class="meta">Loading...</div>
     </section>
 
-    <section id="countdownBlock" class="countdown-block" aria-label="Later today countdown">
-      <div class="countdown-label">Later Today</div>
-      <div class="countdown-controls">
-        <label class="countdown-field" for="countdownNameInput">
-          <span class="countdown-field-label">Name</span>
-          <input id="countdownNameInput" type="text" maxlength="48" autocomplete="off" value="Next Event" />
-        </label>
-        <label class="countdown-field countdown-field-time" for="countdownTimeInput">
-          <span class="countdown-field-label">Time</span>
-          <input id="countdownTimeInput" type="time" step="60" />
-        </label>
-      </div>
-      <p id="countdownValue" class="countdown-value">--:--:--</p>
-      <p id="countdownMeta" class="countdown-meta">Set a time later today to start countdown.</p>
+    <section id="countdownArea" class="countdown-area" aria-label="Later today countdown">
+      <button id="countdownOpenLink" class="countdown-open-link" type="button">Set Countdown</button>
+
+      <section id="countdownBlock" class="countdown-block" aria-label="Later today countdown" hidden>
+        <div class="countdown-label">Later Today</div>
+
+        <div id="countdownDisplay" class="countdown-display" role="button" tabindex="0" aria-label="Edit countdown">
+          <p id="countdownValue" class="countdown-value">--:--:--</p>
+          <p id="countdownMeta" class="countdown-meta">Set a time later today to start countdown.</p>
+        </div>
+
+        <form id="countdownControls" class="countdown-controls" novalidate hidden>
+          <label class="countdown-field" for="countdownNameInput">
+            <input id="countdownNameInput" type="text" maxlength="48" autocomplete="off" placeholder="Next Event" />
+          </label>
+          <label class="countdown-field countdown-field-time" for="countdownTimeInput">
+            <span class="countdown-field-label">Time</span>
+            <input id="countdownTimeInput" type="time" step="60" required />
+          </label>
+          <div class="countdown-actions">
+            <button id="countdownApplyBtn" class="countdown-action-btn primary" type="submit">Apply</button>
+            <button id="countdownClearBtn" class="countdown-action-btn danger" type="button">Clear</button>
+            <button id="countdownCancelBtn" class="countdown-action-btn" type="button">Close</button>
+          </div>
+        </form>
+      </section>
     </section>
   </main>
 
@@ -360,12 +520,26 @@
     const timeEl = document.getElementById("time");
     const metaEl = document.getElementById("meta");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const countdownOpenLinkEl = document.getElementById("countdownOpenLink");
     const countdownBlockEl = document.getElementById("countdownBlock");
+    const countdownDisplayEl = document.getElementById("countdownDisplay");
+    const countdownControlsEl = document.getElementById("countdownControls");
     const countdownNameInput = document.getElementById("countdownNameInput");
     const countdownTimeInput = document.getElementById("countdownTimeInput");
+    const countdownClearBtn = document.getElementById("countdownClearBtn");
+    const countdownCancelBtn = document.getElementById("countdownCancelBtn");
     const countdownValueEl = document.getElementById("countdownValue");
     const countdownMetaEl = document.getElementById("countdownMeta");
     const countdownStorageKey = "zen-clock-countdown-v1";
+    const clockTimePattern = /^\d{2}:\d{2}$/;
+
+    let countdownState = {
+      enabled: false,
+      name: "",
+      time: ""
+    };
+
+    let countdownControlsVisible = false;
 
     const timeFormatter = new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
@@ -414,7 +588,7 @@
     }
 
     function parseTodayTarget(timeValue, referenceDate = new Date()) {
-      if (!/^\d{2}:\d{2}$/.test(timeValue)) {
+      if (!clockTimePattern.test(timeValue)) {
         return null;
       }
 
@@ -454,22 +628,55 @@
       countdownTimeInput.min = formatInputTime(minTarget);
     }
 
-    function saveCountdownConfig() {
-      const payload = {
-        name: countdownNameInput.value,
-        time: countdownTimeInput.value
-      };
+    function normalizeCountdownName(value) {
+      if (typeof value !== "string") {
+        return "";
+      }
 
+      return value.trim().slice(0, 48);
+    }
+
+    function isValidCountdownTime(value) {
+      return typeof value === "string" && clockTimePattern.test(value);
+    }
+
+    function setCountdownDraftFromState(now = new Date()) {
+      countdownNameInput.value = countdownState.name;
+      countdownTimeInput.value = countdownState.enabled && isValidCountdownTime(countdownState.time)
+        ? countdownState.time
+        : getDefaultCountdownTime(now);
+    }
+
+    function syncCountdownLayout() {
+      const hasCountdown = countdownState.enabled;
+      countdownOpenLinkEl.hidden = hasCountdown || countdownControlsVisible;
+      countdownBlockEl.hidden = !hasCountdown && !countdownControlsVisible;
+      countdownDisplayEl.hidden = !hasCountdown;
+      countdownControlsEl.hidden = !countdownControlsVisible;
+      countdownBlockEl.classList.toggle("is-editing", countdownControlsVisible);
+    }
+
+    function saveCountdownState() {
       try {
-        localStorage.setItem(countdownStorageKey, JSON.stringify(payload));
+        if (!countdownState.enabled) {
+          localStorage.removeItem(countdownStorageKey);
+          return;
+        }
+
+        localStorage.setItem(countdownStorageKey, JSON.stringify(countdownState));
       } catch (error) {
         console.warn("Unable to save countdown config:", error);
       }
     }
 
-    function loadCountdownConfig() {
-      countdownNameInput.value = "Next Event";
-      countdownTimeInput.value = getDefaultCountdownTime();
+    function loadCountdownConfig(now = new Date()) {
+      countdownState = {
+        enabled: false,
+        name: "",
+        time: ""
+      };
+
+      setCountdownDraftFromState(now);
 
       try {
         const raw = localStorage.getItem(countdownStorageKey);
@@ -478,22 +685,85 @@
         }
 
         const stored = JSON.parse(raw);
-        if (typeof stored?.name === "string" && stored.name.trim().length > 0) {
-          countdownNameInput.value = stored.name.slice(0, 48);
-        }
+        const storedName = normalizeCountdownName(stored?.name);
+        const storedTime = isValidCountdownTime(stored?.time) ? stored.time : "";
+        const storedEnabled = typeof stored?.enabled === "boolean" ? stored.enabled : Boolean(storedTime);
 
-        if (typeof stored?.time === "string" && /^\d{2}:\d{2}$/.test(stored.time)) {
-          countdownTimeInput.value = stored.time;
+        if (storedEnabled && storedTime) {
+          countdownState = {
+            enabled: true,
+            name: storedName,
+            time: storedTime
+          };
         }
       } catch (error) {
         console.warn("Unable to load countdown config:", error);
+      } finally {
+        setCountdownDraftFromState(now);
       }
     }
 
-    function paintCountdown(now = new Date()) {
-      const label = countdownNameInput.value.trim() || "Next Event";
+    function openCountdownControls(now = new Date()) {
+      countdownControlsVisible = true;
+      setCountdownDraftFromState(now);
+      syncCountdownLayout();
+      countdownTimeInput.focus();
+    }
+
+    function closeCountdownControls(now = new Date()) {
+      countdownControlsVisible = false;
+      setCountdownDraftFromState(now);
+      syncCountdownLayout();
+      paintCountdown(now);
+    }
+
+    function applyCountdownFromControls(now = new Date()) {
       const target = parseTodayTarget(countdownTimeInput.value, now);
+      if (!target) {
+        countdownBlockEl.classList.add("is-warning");
+        countdownMetaEl.textContent = "Set a valid time later today.";
+        countdownTimeInput.focus();
+        return;
+      }
+
+      countdownState = {
+        enabled: true,
+        name: normalizeCountdownName(countdownNameInput.value),
+        time: countdownTimeInput.value
+      };
+
+      saveCountdownState();
+      countdownControlsVisible = false;
+      syncCountdownLayout();
+      paintCountdown(now);
+    }
+
+    function clearCountdown() {
+      countdownState = {
+        enabled: false,
+        name: "",
+        time: ""
+      };
+
+      countdownControlsVisible = false;
+      saveCountdownState();
+      setCountdownDraftFromState();
       countdownBlockEl.classList.remove("is-warning");
+      syncCountdownLayout();
+      paintCountdown();
+    }
+
+    function paintCountdown(now = new Date()) {
+      countdownBlockEl.classList.remove("is-warning");
+
+      if (!countdownState.enabled) {
+        countdownValueEl.textContent = "--:--:--";
+        countdownMetaEl.textContent = "Set a countdown later today.";
+        return;
+      }
+
+      const label = countdownState.name || "Next Event";
+      const target = parseTodayTarget(countdownState.time, now);
 
       if (!target) {
         countdownValueEl.textContent = "--:--:--";
@@ -506,7 +776,7 @@
 
       if (diffMs <= 0) {
         countdownValueEl.textContent = "00:00:00";
-        countdownMetaEl.textContent = `${label} reached at ${shortTimeFormatter.format(target)}. Set another time for today.`;
+        countdownMetaEl.textContent = `${label} reached at ${shortTimeFormatter.format(target)}. Tap countdown to update.`;
         countdownBlockEl.classList.add("is-warning");
         return;
       }
@@ -608,20 +878,40 @@
     loadCountdownConfig();
     setTimeInputMin();
     paintCountdown();
+    syncCountdownLayout();
 
-    countdownNameInput.addEventListener("input", () => {
-      paintCountdown();
-      saveCountdownConfig();
+    countdownOpenLinkEl.addEventListener("click", () => {
+      openCountdownControls(new Date());
     });
 
-    countdownTimeInput.addEventListener("input", () => {
-      paintCountdown();
-      saveCountdownConfig();
+    countdownDisplayEl.addEventListener("click", () => {
+      if (countdownState.enabled && !countdownControlsVisible) {
+        openCountdownControls(new Date());
+      }
     });
 
-    countdownTimeInput.addEventListener("change", () => {
-      paintCountdown();
-      saveCountdownConfig();
+    countdownDisplayEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      if (countdownState.enabled && !countdownControlsVisible) {
+        openCountdownControls(new Date());
+      }
+    });
+
+    countdownControlsEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyCountdownFromControls(new Date());
+    });
+
+    countdownClearBtn.addEventListener("click", () => {
+      clearCountdown();
+    });
+
+    countdownCancelBtn.addEventListener("click", () => {
+      closeCountdownControls(new Date());
     });
 
     syncFullscreenState();
