@@ -67,6 +67,88 @@
 
         .actions { display: flex; gap: 10px; align-items: center; }
 
+        .title-bar {
+            flex-basis: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .title-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .title-input {
+            flex: 1;
+            min-width: 240px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1rem;
+            color: #0f172a;
+            background: white;
+        }
+
+        .title-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+        }
+
+        .month-filter-bar {
+            flex-basis: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding-top: 4px;
+        }
+
+        .month-filter-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .month-toggle-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .month-toggle {
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-color);
+            padding: 6px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .month-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .month-toggle.hidden {
+            background: #e2e8f0;
+            color: #64748b;
+            border-color: #cbd5e1;
+            text-decoration: line-through;
+        }
+
+        .month-reset-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
         button.btn {
             background-color: var(--primary);
             color: white;
@@ -82,6 +164,13 @@
         button.btn:hover { background-color: var(--primary-hover); }
         button.btn.secondary { background-color: white; color: var(--text-color); border: 1px solid var(--border); }
         button.btn.secondary:hover { background-color: var(--weekend); }
+        button.btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            border-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        button.btn.secondary:disabled:hover { background: #e2e8f0; }
 
         /* Calendar Layout */
         .calendar-grid {
@@ -98,6 +187,15 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+        }
+
+        .empty-calendar-message {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 28px;
+            text-align: center;
+            color: #64748b;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .month-header {
@@ -234,6 +332,8 @@
             h1 { justify-content: center; }
             .year-controls { justify-content: center; }
             .actions { justify-content: center; flex-wrap: wrap; }
+            .month-filter-bar { justify-content: center; }
+            .month-toggle-list { justify-content: center; }
         }
 
         textarea:not(:placeholder-shown) {
@@ -257,6 +357,23 @@
         <button class="btn secondary" onclick="openImportModal()">Import</button>
         <button class="btn" onclick="exportData()">Export JSON</button>
     </div>
+
+    <div class="title-bar">
+        <label class="title-label" for="calendarTitleInput">Title</label>
+        <input
+            class="title-input"
+            id="calendarTitleInput"
+            type="text"
+            placeholder="Calendar title"
+            oninput="handleTitleInput(this.value)"
+        >
+    </div>
+
+    <div class="month-filter-bar">
+        <span class="month-filter-label">Months</span>
+        <div class="month-toggle-list" id="monthToggleList"></div>
+        <button class="btn secondary month-reset-btn" id="showAllMonthsBtn" onclick="showAllMonths()">Show all</button>
+    </div>
 </header>
 
 <div class="calendar-grid" id="calendarGrid">
@@ -270,8 +387,8 @@
             <div class="modal-title">Import Data</div>
             <button class="btn-icon" onclick="closeImportModal()">&times;</button>
         </div>
-        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Paste your JSON data below:</p>
-        <textarea id="importTextarea" placeholder='{"2024-01-01": "Happy New Year!"}'></textarea>
+        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Paste your JSON data below. Both legacy data-only JSON and the new title+data JSON are supported.</p>
+        <textarea id="importTextarea" placeholder='{"title":"Project Plan","data":{"2024-01-01":"Happy New Year!"}}'></textarea>
         <div class="actions" style="justify-content: flex-end;">
             <button class="btn secondary" onclick="pasteFromClipboard()">Paste</button>
             <button class="btn" onclick="processImport()">Load Data</button>
@@ -285,11 +402,14 @@
     // --- State ---
     const STORAGE_KEY = "year_planner_v3_plain";
     const PREF_KEY_WEEK = "year_planner_week_start";
+    const PREF_KEY_VISIBLE_MONTHS = "year_planner_visible_months";
     
     let currentYear = new Date().getFullYear();
+    let calendarTitle = "";
     let plannerData = {}; 
     let saveTimeout = null;
     let weekStart = 0; // 0 = Sunday, 1 = Monday
+    let visibleMonths = Array(12).fill(true);
 
     // --- Init ---
     function init() {
@@ -299,7 +419,9 @@
         loadData();
         loadPrefs();
         document.getElementById('currentYearDisplay').innerText = currentYear;
+        document.getElementById('calendarTitleInput').value = calendarTitle;
         updateWeekBtnLabel();
+        renderMonthToggles();
         renderCalendar();
     }
 
@@ -307,18 +429,34 @@
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             try { 
-                plannerData = JSON.parse(stored); 
+                const parsed = JSON.parse(stored);
+                const normalized = normalizeImportedState(parsed);
+                calendarTitle = normalized.title;
+                plannerData = normalized.data;
             } catch (e) { 
                 console.error("Data load error", e); 
+                calendarTitle = "";
                 plannerData = {};
             }
         }
     }
 
     function loadPrefs() {
-        const stored = localStorage.getItem(PREF_KEY_WEEK);
-        if (stored !== null) {
-            weekStart = parseInt(stored);
+        const storedWeekStart = localStorage.getItem(PREF_KEY_WEEK);
+        if (storedWeekStart !== null) {
+            weekStart = parseInt(storedWeekStart);
+        }
+
+        const storedVisibleMonths = localStorage.getItem(PREF_KEY_VISIBLE_MONTHS);
+        if (storedVisibleMonths) {
+            try {
+                const parsed = JSON.parse(storedVisibleMonths);
+                if (Array.isArray(parsed) && parsed.length === 12 && parsed.every(value => typeof value === 'boolean')) {
+                    visibleMonths = parsed;
+                }
+            } catch (e) {
+                console.error("Month preference load error", e);
+            }
         }
     }
 
@@ -334,6 +472,86 @@
         btn.innerText = weekStart === 0 ? "Start: Sun" : "Start: Mon";
     }
 
+    function normalizeImportedState(raw) {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+            throw new Error("Invalid format");
+        }
+
+        if ('data' in raw) {
+            if (!raw.data || typeof raw.data !== 'object' || Array.isArray(raw.data)) {
+                throw new Error("Invalid data format");
+            }
+
+            return {
+                title: typeof raw.title === 'string' ? raw.title : "",
+                data: raw.data
+            };
+        }
+
+        return {
+            title: "",
+            data: raw
+        };
+    }
+
+    function getExportPayload() {
+        return {
+            title: calendarTitle,
+            data: plannerData
+        };
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(getExportPayload()));
+    }
+
+    function handleTitleInput(value) {
+        calendarTitle = value;
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveState();
+        }, 500);
+    }
+
+    function saveVisibleMonths() {
+        localStorage.setItem(PREF_KEY_VISIBLE_MONTHS, JSON.stringify(visibleMonths));
+    }
+
+    function toggleMonthVisibility(monthIndex) {
+        visibleMonths[monthIndex] = !visibleMonths[monthIndex];
+        saveVisibleMonths();
+        renderMonthToggles();
+        renderCalendar();
+    }
+
+    function showAllMonths() {
+        visibleMonths = Array(12).fill(true);
+        saveVisibleMonths();
+        renderMonthToggles();
+        renderCalendar();
+    }
+
+    function renderMonthToggles() {
+        const container = document.getElementById('monthToggleList');
+        const showAllBtn = document.getElementById('showAllMonthsBtn');
+        const shortMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+        container.innerHTML = '';
+
+        months.forEach((monthName, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `month-toggle${visibleMonths[index] ? '' : ' hidden'}`;
+            button.innerText = shortMonths[index];
+            button.title = `${visibleMonths[index] ? 'Hide' : 'Show'} ${monthName}`;
+            button.setAttribute('aria-pressed', String(visibleMonths[index]));
+            button.addEventListener('click', () => toggleMonthVisibility(index));
+            container.appendChild(button);
+        });
+
+        showAllBtn.disabled = visibleMonths.every(Boolean);
+    }
+
     // Debounced Save
     function handleInput(dateKey, value) {
         if (value.trim() === "") {
@@ -344,7 +562,7 @@
 
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerData));
+            saveState();
         }, 500);
     }
 
@@ -362,6 +580,8 @@
             : ["M","T","W","T","F","S","S"];
 
         months.forEach((monthName, mIndex) => {
+            if (!visibleMonths[mIndex]) return;
+
             const monthBlock = document.createElement('div');
             monthBlock.className = 'month-block';
 
@@ -442,6 +662,13 @@
             monthBlock.appendChild(daysContainer);
             grid.appendChild(monthBlock);
         });
+
+        if (!grid.children.length) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-calendar-message';
+            emptyMessage.innerText = 'All months are hidden. Use the month buttons above to show them again.';
+            grid.appendChild(emptyMessage);
+        }
     }
 
     function changeYear(offset) {
@@ -455,8 +682,7 @@
     // NEW: No compression. Just pure JSON stringify.
     function exportData() {
         try {
-            // Convert data object directly to JSON string
-            const jsonString = JSON.stringify(plannerData);
+            const jsonString = JSON.stringify(getExportPayload());
             
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(jsonString).then(() => {
@@ -504,14 +730,13 @@
         if(!raw) return;
 
         try {
-            // NEW: Directly parse JSON. No decompression steps.
-            const data = JSON.parse(raw);
-
-            if(typeof data !== 'object') throw new Error("Invalid format");
+            const normalized = normalizeImportedState(JSON.parse(raw));
 
             if(confirm("This will overwrite your current calendar with the imported data. Continue?")) {
-                plannerData = data;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(plannerData));
+                calendarTitle = normalized.title;
+                plannerData = normalized.data;
+                document.getElementById('calendarTitleInput').value = calendarTitle;
+                saveState();
                 renderCalendar();
                 closeImportModal();
                 showToast("Data Loaded Successfully!");
@@ -532,5 +757,3 @@
 </script>
 </body>
 </html>
-
-
