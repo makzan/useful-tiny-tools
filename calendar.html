@@ -29,8 +29,7 @@
         /* Header */
         header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             background: var(--card-bg);
             padding: 15px 5px;
             border-radius: 8px;
@@ -41,6 +40,15 @@
             z-index: 20;
             flex-wrap: wrap;
             gap: 15px;
+        }
+
+        .header-main {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; min-width: 200px; }
@@ -66,6 +74,19 @@
         .btn-icon:hover { background-color: var(--bg-color); border-color: var(--border); }
 
         .actions { display: flex; gap: 10px; align-items: center; }
+
+        .config-panel {
+            width: 100%;
+            display: none;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .config-panel.open {
+            display: flex;
+        }
 
         .title-bar {
             flex-basis: 100%;
@@ -330,8 +351,10 @@
         @media (max-width: 600px) {
             header { flex-direction: column; align-items: stretch; text-align: center; }
             h1 { justify-content: center; }
+            .header-main { justify-content: center; }
             .year-controls { justify-content: center; }
             .actions { justify-content: center; flex-wrap: wrap; }
+            .title-bar { justify-content: center; }
             .month-filter-bar { justify-content: center; }
             .month-toggle-list { justify-content: center; }
         }
@@ -345,34 +368,41 @@
 <body>
 
 <header>
-    
-    <div class="year-controls">
-        <button class="btn-icon" onclick="changeYear(-1)">&#9664;</button>
-        <span id="currentYearDisplay">2024</span>
-        <button class="btn-icon" onclick="changeYear(1)">&#9654;</button>
+    <div class="header-main">
+        <div class="year-controls">
+            <button class="btn-icon" onclick="changeYear(-1)">&#9664;</button>
+            <span id="currentYearDisplay">2024</span>
+            <button class="btn-icon" onclick="changeYear(1)">&#9654;</button>
+        </div>
+
+        <div class="actions">
+            <button class="btn secondary" id="configToggleBtn" onclick="toggleConfigPanel()">Config</button>
+        </div>
     </div>
 
-    <div class="actions">
-        <button class="btn secondary" id="weekToggleBtn" onclick="toggleWeekStart()">Start: Sun</button>
-        <button class="btn secondary" onclick="openImportModal()">Import</button>
-        <button class="btn" onclick="exportData()">Export JSON</button>
-    </div>
+    <div class="config-panel" id="configPanel">
+        <div class="actions">
+            <button class="btn secondary" id="weekToggleBtn" onclick="toggleWeekStart()">Start: Sun</button>
+            <button class="btn secondary" onclick="openImportModal()">Import</button>
+            <button class="btn" onclick="exportData()">Export JSON</button>
+        </div>
 
-    <div class="title-bar">
-        <label class="title-label" for="calendarTitleInput">Title</label>
-        <input
-            class="title-input"
-            id="calendarTitleInput"
-            type="text"
-            placeholder="Calendar title"
-            oninput="handleTitleInput(this.value)"
-        >
-    </div>
+        <div class="title-bar">
+            <label class="title-label" for="calendarTitleInput">Title</label>
+            <input
+                class="title-input"
+                id="calendarTitleInput"
+                type="text"
+                placeholder="Calendar title"
+                oninput="handleTitleInput(this.value)"
+            >
+        </div>
 
-    <div class="month-filter-bar">
-        <span class="month-filter-label">Months</span>
-        <div class="month-toggle-list" id="monthToggleList"></div>
-        <button class="btn secondary month-reset-btn" id="showAllMonthsBtn" onclick="showAllMonths()">Show all</button>
+        <div class="month-filter-bar">
+            <span class="month-filter-label">Months</span>
+            <div class="month-toggle-list" id="monthToggleList"></div>
+            <button class="btn secondary month-reset-btn" id="showAllMonthsBtn" onclick="showAllMonths()">Show all</button>
+        </div>
     </div>
 </header>
 
@@ -403,6 +433,7 @@
     const STORAGE_KEY = "year_planner_v3_plain";
     const PREF_KEY_WEEK = "year_planner_week_start";
     const PREF_KEY_VISIBLE_MONTHS = "year_planner_visible_months";
+    const PREF_KEY_CONFIG_OPEN = "year_planner_config_open";
     
     let currentYear = new Date().getFullYear();
     let calendarTitle = "";
@@ -410,6 +441,7 @@
     let saveTimeout = null;
     let weekStart = 0; // 0 = Sunday, 1 = Monday
     let visibleMonths = Array(12).fill(true);
+    let isConfigOpen = false;
 
     // --- Init ---
     function init() {
@@ -421,6 +453,7 @@
         document.getElementById('currentYearDisplay').innerText = currentYear;
         document.getElementById('calendarTitleInput').value = calendarTitle;
         updateWeekBtnLabel();
+        updateConfigPanel();
         renderMonthToggles();
         renderCalendar();
     }
@@ -458,6 +491,11 @@
                 console.error("Month preference load error", e);
             }
         }
+
+        const storedConfigOpen = localStorage.getItem(PREF_KEY_CONFIG_OPEN);
+        if (storedConfigOpen !== null) {
+            isConfigOpen = storedConfigOpen === 'true';
+        }
     }
 
     function toggleWeekStart() {
@@ -470,6 +508,20 @@
     function updateWeekBtnLabel() {
         const btn = document.getElementById('weekToggleBtn');
         btn.innerText = weekStart === 0 ? "Start: Sun" : "Start: Mon";
+    }
+
+    function toggleConfigPanel() {
+        isConfigOpen = !isConfigOpen;
+        localStorage.setItem(PREF_KEY_CONFIG_OPEN, String(isConfigOpen));
+        updateConfigPanel();
+    }
+
+    function updateConfigPanel() {
+        const panel = document.getElementById('configPanel');
+        const btn = document.getElementById('configToggleBtn');
+        panel.classList.toggle('open', isConfigOpen);
+        btn.innerText = isConfigOpen ? 'Hide Config' : 'Config';
+        btn.setAttribute('aria-expanded', String(isConfigOpen));
     }
 
     function normalizeImportedState(raw) {
