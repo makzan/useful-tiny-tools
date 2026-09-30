@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Crop 相片裁切</title>
+<style>
+  :root {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+  }
+  body {
+    margin: 0;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  main {
+    width: 100%;
+    max-width: 960px;
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 35px rgba(15, 23, 42, 0.08);
+  }
+  h1 { margin-top: 0; font-size: clamp(1.6rem, 2.4vw, 2.2rem); }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.25rem;
+  }
+  .field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field label { font-weight: 600; font-size: 0.9rem; }
+  input[type="number"] {
+    width: 7rem;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+  }
+  input[type="file"] { max-width: 260px; }
+  button, select {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background: #f1f5f9;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:hover { background: #e2e8f0; }
+  button.primary {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+    font-weight: 600;
+  }
+  button.primary:hover { background: #1d4ed8; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #stageWrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  #stage {
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #334155;
+    border-radius: 0.25rem;
+    background:
+      repeating-conic-gradient(#e2e8f0 0% 25%, #ffffff 0% 50%) 0 0 / 20px 20px;
+    touch-action: none;
+    cursor: grab;
+    display: none;
+  }
+  #stage.dragging { cursor: grabbing; }
+  #stage img {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+  #placeholder {
+    color: #64748b;
+    padding: 3rem 1rem;
+    text-align: center;
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    width: 100%;
+  }
+  .zoom-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  #zoom { flex: 1; min-width: 160px; }
+  #info { color: #475569; font-size: 0.9rem; margin-bottom: 1rem; min-height: 1.2rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Photo Crop 相片裁切</h1>
+
+  <div class="controls">
+    <div class="field">
+      <label for="cropW">寬度 Width (px)</label>
+      <input type="number" id="cropW" min="1" placeholder="e.g. 1200">
+    </div>
+    <div class="field">
+      <label for="cropH">高度 Height (px)</label>
+      <input type="number" id="cropH" min="1" placeholder="e.g. 630">
+    </div>
+    <div class="field">
+      <label for="file">相片 Image</label>
+      <input type="file" id="file" accept="image/*">
+    </div>
+  </div>
+
+  <div id="stageWrap">
+    <div id="placeholder">請先設定尺寸並上傳相片<br>Set a size and upload an image to begin</div>
+    <div id="stage"><img id="photo" alt=""></div>
+  </div>
+
+  <div class="zoom-row">
+    <button id="zoomOut" disabled>−</button>
+    <input type="range" id="zoom" min="0" max="1000" value="500" disabled>
+    <button id="zoomIn" disabled>＋</button>
+    <button id="fitW" disabled>Fit Width 符合寬度</button>
+    <button id="fitH" disabled>Fit Height 符合高度</button>
+    <button id="reset" disabled>Reset 重設</button>
+  </div>
+
+  <div id="info"></div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="format">格式 Format</label>
+      <select id="format">
+        <option value="jpeg">JPEG (90% quality)</option>
+        <option value="png">PNG</option>
+      </select>
+    </div>
+    <button id="download" class="primary" disabled>Download 下載</button>
+  </div>
+</main>
+
+<script>
+(function () {
+  var cropWInput = document.getElementById('cropW');
+  var cropHInput = document.getElementById('cropH');
+  var fileInput = document.getElementById('file');
+  var stage = document.getElementById('stage');
+  var placeholder = document.getElementById('placeholder');
+  var img = document.getElementById('photo');
+  var zoomSlider = document.getElementById('zoom');
+  var info = document.getElementById('info');
+  var formatSelect = document.getElementById('format');
+  var downloadBtn = document.getElementById('download');
+  var controls = ['zoomIn', 'zoomOut', 'fitW', 'fitH', 'reset'].map(function (id) {
+    return document.getElementById(id);
+  });
+
+  var Z_MIN = 0.05, Z_MAX = 10;
+
+  var state = {
+    loaded: false,
+    imgW: 0, imgH: 0,   // natural image size
+    cropW: 0, cropH: 0, // output size in px
+    base: 1,            // scale so image covers crop box at zoom 1
+    zoom: 1,            // user zoom multiplier
+    x: 0, y: 0,         // image top-left in crop-box px
+    preview: 1          // screen px per crop px
+  };
+
+  function absScale() { return state.base * state.zoom; }
+
+  function sliderToZoom(v) {
+    return Z_MIN * Math.pow(Z_MAX / Z_MIN, v / 1000);
+  }
+  function zoomToSlider(z) {
+    return Math.round(1000 * Math.log(z / Z_MIN) / Math.log(Z_MAX / Z_MIN));
+  }
+
+  function readCropSize() {
+    var w = parseInt(cropWInput.value, 10);
+    var h = parseInt(cropHInput.value, 10);
+    state.cropW = (w > 0) ? w : 0;
+    state.cropH = (h > 0) ? h : 0;
+  }
+
+  // Fill a missing dimension from the image aspect ratio. Returns true if ready.
+  function completeCropSize() {
+    readCropSize();
+    if (!state.loaded) return false;
+    if (state.cropW > 0 && state.cropH > 0) return true;
+    if (state.cropW > 0) {
+      state.cropH = Math.max(1, Math.round(state.cropW * state.imgH / state.imgW));
+      cropHInput.value = state.cropH;
+      return true;
+    }
+    if (state.cropH > 0) {
+      state.cropW = Math.max(1, Math.round(state.cropH * state.imgW / state.imgH));
+      cropWInput.value = state.cropW;
+      return true;
+    }
+    return false;
+  }
+
+  function layout() {
+    if (!state.loaded || !completeCropSize()) return;
+
+    var oldAbs = absScale();
+    state.base = Math.max(state.cropW / state.imgW, state.cropH / state.imgH);
+    state.zoom = oldAbs / state.base; // preserve on-screen magnification
+
+    var maxW = Math.min(stage.parentElement.clientWidth, 900);
+    var maxH = window.innerHeight * 0.55;
+    state.preview = Math.min(maxW / state.cropW, maxH / state.cropH);
+
+    stage.style.width = (state.cropW * state.preview) + 'px';
+    stage.style.height = (state.cropH * state.preview) + 'px';
+    stage.style.display = 'block';
+    placeholder.style.display = 'none';
+
+    render();
+    setEnabled(true);
+  }
+
+  function render() {
+    var s = absScale() * state.preview;
+    img.style.transform = 'translate(' + (state.x * state.preview) + 'px,' +
+      (state.y * state.preview) + 'px) scale(' + s + ')';
+    zoomSlider.value = zoomToSlider(state.zoom);
+    var dispW = Math.round(state.imgW * absScale());
+    var dispH = Math.round(state.imgH * absScale());
+    info.textContent = '輸出 Output: ' + state.cropW + ' × ' + state.cropH +
+      ' px ｜ 原圖 Source: ' + state.imgW + ' × ' + state.imgH +
+      ' px ｜ 縮放後 Scaled: ' + dispW + ' × ' + dispH + ' px';
+  }
+
+  function setEnabled(on) {
+    zoomSlider.disabled = !on;
+    downloadBtn.disabled = !on;
+    controls.forEach(function (b) { b.disabled = !on; });
+  }
+
+  function setZoom(newZoom, pivotX, pivotY) {
+    var z = Math.min(Z_MAX, Math.max(Z_MIN, newZoom));
+    if (pivotX === undefined) { pivotX = state.cropW / 2; pivotY = state.cropH / 2; }
+    var ratio = z / state.zoom;
+    state.x = pivotX - (pivotX - state.x) * ratio;
+    state.y = pivotY - (pivotY - state.y) * ratio;
+    state.zoom = z;
+    render();
+  }
+
+  function fitWidth() {
+    state.zoom = (state.cropW / state.imgW) / state.base;
+    state.x = 0;
+    state.y = (state.cropH - state.imgH * absScale()) / 2;
+    render();
+  }
+
+  function fitHeight() {
+    state.zoom = (state.cropH / state.imgH) / state.base;
+    state.y = 0;
+    state.x = (state.cropW - state.imgW * absScale()) / 2;
+    render();
+  }
+
+  function reset() {
+    state.zoom = 1;
+    state.x = (state.cropW - state.imgW * absScale()) / 2;
+    state.y = (state.cropH - state.imgH * absScale()) / 2;
+    render();
+  }
+
+  // ---- events ----
+
+  fileInput.addEventListener('change', function () {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    var url = URL.createObjectURL(file);
+    var probe = new Image();
+    probe.onload = function () {
+      state.loaded = true;
+      state.imgW = probe.naturalWidth;
+      state.imgH = probe.naturalHeight;
+      img.src = url;
+      if (!completeCropSize()) {
+        state.cropW = state.imgW;
+        state.cropH = state.imgH;
+        cropWInput.value = state.cropW;
+        cropHInput.value = state.cropH;
+      }
+      layout();
+      reset();
+    };
+    probe.src = url;
+  });
+
+  cropWInput.addEventListener('change', layout);
+  cropHInput.addEventListener('change', layout);
+  window.addEventListener('resize', layout);
+
+  zoomSlider.addEventListener('input', function () {
+    setZoom(sliderToZoom(parseInt(zoomSlider.value, 10)));
+  });
+  document.getElementById('zoomIn').addEventListener('click', function () {
+    setZoom(state.zoom * 1.2);
+  });
+  document.getElementById('zoomOut').addEventListener('click', function () {
+    setZoom(state.zoom / 1.2);
+  });
+  document.getElementById('fitW').addEventListener('click', fitWidth);
+  document.getElementById('fitH').addEventListener('click', fitHeight);
+  document.getElementById('reset').addEventListener('click', reset);
+
+  // drag to move
+  var drag = null;
+  stage.addEventListener('pointerdown', function (e) {
+    drag = { px: e.clientX, py: e.clientY, x: state.x, y: state.y };
+    stage.setPointerCapture(e.pointerId);
+    stage.classList.add('dragging');
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    state.x = drag.x + (e.clientX - drag.px) / state.preview;
+    state.y = drag.y + (e.clientY - drag.py) / state.preview;
+    render();
+  });
+  function endDrag() { drag = null; stage.classList.remove('dragging'); }
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  // wheel zoom around cursor
+  stage.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var rect = stage.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / state.preview;
+    var py = (e.clientY - rect.top) / state.preview;
+    setZoom(state.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), px, py);
+  }, { passive: false });
+
+  // export
+  downloadBtn.addEventListener('click', function () {
+    var canvas = document.createElement('canvas');
+    canvas.width = state.cropW;
+    canvas.height = state.cropH;
+    var ctx = canvas.getContext('2d');
+    var isJpeg = formatSelect.value === 'jpeg';
+    if (isJpeg) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    var s = absScale();
+    ctx.drawImage(img, state.x, state.y, state.imgW * s, state.imgH * s);
+    var mime = isJpeg ? 'image/jpeg' : 'image/png';
+    canvas.toBlob(function (blob) {
+      if (!blob) return;
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cropped-' + state.cropW + 'x' + state.cropH +
+        (isJpeg ? '.jpg' : '.png');
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    }, mime, isJpeg ? 0.9 : undefined);
+  });
+})();
+</script>
+</body>
+</html>

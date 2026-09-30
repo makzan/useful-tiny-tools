@@ -30,3 +30,4 @@ You can bookmark this page via [mak.la/tool](https://mak.la/tool), or shorten it
 
 - [Photo Stitcher](photo-stick.html)
 - [Images Resize](images-resize.html)
+- [Photo Crop](photo-crop.html)
