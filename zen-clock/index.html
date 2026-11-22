@@ -217,6 +217,12 @@
       max-width: min(82vw, 680px);
     }
 
+    .countdown-mode-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.9rem, 2vw, 1.35rem);
+    }
+
     .countdown-open-link {
       appearance: none;
       border: 0;
@@ -480,15 +486,18 @@
     <button id="fullscreenBtn" class="fullscreen-btn" type="button" aria-pressed="false">Full Screen</button>
   </div>
 
-  <main class="clock-shell" aria-live="polite" aria-label="Current time and countdown">
+  <main class="clock-shell" aria-live="polite" aria-label="Current time and timers">
     <section aria-label="Current time">
       <div class="label">Current Time</div>
       <h1 id="time" class="time">00:00:00</h1>
       <div id="meta" class="meta">Loading...</div>
     </section>
 
-    <section id="countdownArea" class="countdown-area" aria-label="Later today countdown">
-      <button id="countdownOpenLink" class="countdown-open-link" type="button">Set Countdown</button>
+    <section id="countdownArea" class="countdown-area" aria-label="Countdown and focus timer">
+      <div class="countdown-mode-links">
+        <button id="countdownOpenLink" class="countdown-open-link" type="button">Set Countdown</button>
+        <button id="pomodoroOpenLink" class="countdown-open-link" type="button">Focus 25</button>
+      </div>
 
       <section id="countdownBlock" class="countdown-block" aria-label="Later today countdown" hidden>
         <div class="countdown-label">Later Today</div>
@@ -513,6 +522,19 @@
           </div>
         </form>
       </section>
+
+      <section id="pomodoroBlock" class="countdown-block" aria-label="25 minute focus timer" hidden>
+        <div class="countdown-label">Focus</div>
+        <p id="pomodoroValue" class="countdown-value">25:00</p>
+        <p id="pomodoroMeta" class="countdown-meta">A quiet 25-minute session.</p>
+        <div class="countdown-controls">
+          <div class="countdown-actions">
+            <button id="pomodoroToggleBtn" class="countdown-action-btn primary" type="button">Start</button>
+            <button id="pomodoroResetBtn" class="countdown-action-btn" type="button" hidden>Reset</button>
+            <button id="pomodoroCloseBtn" class="countdown-action-btn" type="button">Close</button>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -530,7 +552,16 @@
     const countdownCancelBtn = document.getElementById("countdownCancelBtn");
     const countdownValueEl = document.getElementById("countdownValue");
     const countdownMetaEl = document.getElementById("countdownMeta");
+    const pomodoroOpenLinkEl = document.getElementById("pomodoroOpenLink");
+    const pomodoroBlockEl = document.getElementById("pomodoroBlock");
+    const pomodoroValueEl = document.getElementById("pomodoroValue");
+    const pomodoroMetaEl = document.getElementById("pomodoroMeta");
+    const pomodoroToggleBtn = document.getElementById("pomodoroToggleBtn");
+    const pomodoroResetBtn = document.getElementById("pomodoroResetBtn");
+    const pomodoroCloseBtn = document.getElementById("pomodoroCloseBtn");
     const countdownStorageKey = "zen-clock-countdown-v1";
+    const pomodoroStorageKey = "zen-clock-pomodoro-v1";
+    const pomodoroDurationMs = 25 * 60 * 1000;
     const clockTimePattern = /^\d{2}:\d{2}$/;
 
     let countdownState = {
@@ -539,7 +570,14 @@
       time: ""
     };
 
+    let pomodoroState = {
+      status: "idle",
+      endAt: null,
+      remainingMs: pomodoroDurationMs
+    };
+
     let countdownControlsVisible = false;
+    let pomodoroVisible = false;
 
     const timeFormatter = new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
@@ -649,11 +687,13 @@
 
     function syncCountdownLayout() {
       const hasCountdown = countdownState.enabled;
-      countdownOpenLinkEl.hidden = hasCountdown || countdownControlsVisible;
-      countdownBlockEl.hidden = !hasCountdown && !countdownControlsVisible;
+      countdownOpenLinkEl.hidden = pomodoroVisible || hasCountdown || countdownControlsVisible;
+      countdownBlockEl.hidden = pomodoroVisible || (!hasCountdown && !countdownControlsVisible);
       countdownDisplayEl.hidden = !hasCountdown;
       countdownControlsEl.hidden = !countdownControlsVisible;
       countdownBlockEl.classList.toggle("is-editing", countdownControlsVisible);
+      pomodoroOpenLinkEl.hidden = pomodoroVisible;
+      pomodoroBlockEl.hidden = !pomodoroVisible;
     }
 
     function saveCountdownState() {
@@ -753,6 +793,160 @@
       paintCountdown();
     }
 
+    function formatPomodoroDuration(diffMs) {
+      const totalSeconds = Math.max(0, Math.ceil(diffMs / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${pad2(minutes)}:${pad2(seconds)}`;
+    }
+
+    function getPomodoroRemainingMs(now = new Date()) {
+      if (pomodoroState.status !== "running") {
+        return pomodoroState.remainingMs;
+      }
+
+      return Math.max(0, pomodoroState.endAt - now.getTime());
+    }
+
+    function savePomodoroState() {
+      try {
+        if (pomodoroState.status === "idle") {
+          localStorage.removeItem(pomodoroStorageKey);
+          return;
+        }
+
+        localStorage.setItem(pomodoroStorageKey, JSON.stringify(pomodoroState));
+      } catch (error) {
+        console.warn("Unable to save Pomodoro state:", error);
+      }
+    }
+
+    function loadPomodoroConfig(now = new Date()) {
+      pomodoroState = {
+        status: "idle",
+        endAt: null,
+        remainingMs: pomodoroDurationMs
+      };
+
+      try {
+        const raw = localStorage.getItem(pomodoroStorageKey);
+        if (!raw) {
+          return;
+        }
+
+        const stored = JSON.parse(raw);
+
+        if (stored?.status === "running" && Number.isFinite(stored.endAt)) {
+          pomodoroState = {
+            status: "running",
+            endAt: stored.endAt,
+            remainingMs: Math.max(0, stored.endAt - now.getTime())
+          };
+        } else if (
+          stored?.status === "paused" &&
+          Number.isFinite(stored.remainingMs) &&
+          stored.remainingMs > 0 &&
+          stored.remainingMs <= pomodoroDurationMs
+        ) {
+          pomodoroState = {
+            status: "paused",
+            endAt: null,
+            remainingMs: stored.remainingMs
+          };
+        } else if (stored?.status === "complete") {
+          pomodoroState = {
+            status: "complete",
+            endAt: null,
+            remainingMs: 0
+          };
+        }
+      } catch (error) {
+        console.warn("Unable to load Pomodoro state:", error);
+      }
+    }
+
+    function startPomodoro(now = new Date()) {
+      const remainingMs = pomodoroState.status === "paused"
+        ? pomodoroState.remainingMs
+        : pomodoroDurationMs;
+
+      pomodoroState = {
+        status: "running",
+        endAt: now.getTime() + remainingMs,
+        remainingMs
+      };
+
+      savePomodoroState();
+      paintPomodoro(now);
+    }
+
+    function pausePomodoro(now = new Date()) {
+      if (pomodoroState.status !== "running") {
+        return;
+      }
+
+      const remainingMs = getPomodoroRemainingMs(now);
+      if (remainingMs <= 0) {
+        paintPomodoro(now);
+        return;
+      }
+
+      pomodoroState = {
+        status: "paused",
+        endAt: null,
+        remainingMs
+      };
+
+      savePomodoroState();
+      paintPomodoro(now);
+    }
+
+    function resetPomodoro() {
+      pomodoroState = {
+        status: "idle",
+        endAt: null,
+        remainingMs: pomodoroDurationMs
+      };
+
+      savePomodoroState();
+      paintPomodoro();
+    }
+
+    function paintPomodoro(now = new Date()) {
+      let remainingMs = getPomodoroRemainingMs(now);
+
+      if (pomodoroState.status === "running" && remainingMs <= 0) {
+        pomodoroState = {
+          status: "complete",
+          endAt: null,
+          remainingMs: 0
+        };
+        remainingMs = 0;
+        savePomodoroState();
+      }
+
+      const durationText = formatPomodoroDuration(remainingMs);
+      pomodoroValueEl.textContent = durationText;
+      pomodoroOpenLinkEl.textContent = pomodoroState.status === "idle"
+        ? "Focus 25"
+        : `Focus · ${durationText}`;
+      pomodoroResetBtn.hidden = pomodoroState.status === "idle";
+
+      if (pomodoroState.status === "running") {
+        pomodoroToggleBtn.textContent = "Pause";
+        pomodoroMetaEl.textContent = `Focus until ${shortTimeFormatter.format(new Date(pomodoroState.endAt))}.`;
+      } else if (pomodoroState.status === "paused") {
+        pomodoroToggleBtn.textContent = "Resume";
+        pomodoroMetaEl.textContent = "Paused. Resume when ready.";
+      } else if (pomodoroState.status === "complete") {
+        pomodoroToggleBtn.textContent = "Again";
+        pomodoroMetaEl.textContent = "Focus complete. Take a breath.";
+      } else {
+        pomodoroToggleBtn.textContent = "Start";
+        pomodoroMetaEl.textContent = "A quiet 25-minute session.";
+      }
+    }
+
     function paintCountdown(now = new Date()) {
       countdownBlockEl.classList.remove("is-warning");
 
@@ -843,6 +1037,7 @@
       metaEl.textContent = `${dateFormatter.format(now)} · ${zoneLabel}`;
       setTimeInputMin(now);
       paintCountdown(now);
+      paintPomodoro(now);
       document.title = `${shownTime} · Zen Clock`;
 
       window.setTimeout(() => {
@@ -876,12 +1071,40 @@
     }
 
     loadCountdownConfig();
+    loadPomodoroConfig();
     setTimeInputMin();
     paintCountdown();
+    paintPomodoro();
     syncCountdownLayout();
 
     countdownOpenLinkEl.addEventListener("click", () => {
+      pomodoroVisible = false;
       openCountdownControls(new Date());
+    });
+
+    pomodoroOpenLinkEl.addEventListener("click", () => {
+      pomodoroVisible = true;
+      syncCountdownLayout();
+      paintPomodoro();
+      pomodoroToggleBtn.focus();
+    });
+
+    pomodoroToggleBtn.addEventListener("click", () => {
+      if (pomodoroState.status === "running") {
+        pausePomodoro(new Date());
+      } else {
+        startPomodoro(new Date());
+      }
+    });
+
+    pomodoroResetBtn.addEventListener("click", resetPomodoro);
+
+    pomodoroCloseBtn.addEventListener("click", () => {
+      pomodoroVisible = false;
+      syncCountdownLayout();
+      paintPomodoro();
+      paintCountdown();
+      pomodoroOpenLinkEl.focus();
     });
 
     countdownDisplayEl.addEventListener("click", () => {
