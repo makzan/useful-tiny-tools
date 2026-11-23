@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="Flight Focus — 沿真實航線飛行，把專注時間變成一段旅程。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1120'/%3E%3Cpath d='M54 34 37 26V13a5 5 0 0 0-10 0v13L10 34v5l17-5v13l-6 4v4l11-3 11 3v-4l-6-4V34l17 5z' fill='%2338bdf8'/%3E%3C/svg%3E">
+  <title>Flight Focus — 模擬飛行專注模式</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <div id="map" aria-label="即時飛行地圖"></div>
+    <div class="map-vignette" aria-hidden="true"></div>
+
+    <section id="preflight" class="glass preflight" aria-labelledby="preflightTitle">
+      <header class="brand-block">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M21.5 14.2 13.8 10V4.1a1.8 1.8 0 0 0-3.6 0V10l-7.7 4.2v2l7.7-2.3v4.6l-2.4 1.6v1.3l4.2-1.2 4.2 1.2v-1.3l-2.4-1.6v-4.6l7.7 2.3z"/></svg>
+        </div>
+        <div>
+          <p class="eyebrow">FOCUS AIRLINES · DEPARTURE LOUNGE</p>
+          <h1 id="preflightTitle">FLIGHT <span>FOCUS</span></h1>
+        </div>
+        <div class="live-pill"><i></i> READY</div>
+      </header>
+
+      <div class="preflight-intro">
+        <p>選一段航程，把接下來的時間留給真正重要的事。</p>
+        <span>LOCAL TIME <b id="localClock">--:--</b></span>
+      </div>
+
+      <label class="field-label" for="taskInput">本次專注任務 <span>OPTIONAL</span></label>
+      <div class="task-input-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h7"/></svg>
+        <input id="taskInput" type="text" maxlength="80" placeholder="例如：撰寫課程大綱" autocomplete="off">
+      </div>
+
+      <div class="filter-heading">
+        <span>選擇飛行時長</span>
+        <small id="flightCount">0 個航班</small>
+      </div>
+      <div id="durationFilters" class="duration-filters" role="group" aria-label="依飛行時長篩選">
+        <button class="active" data-filter="all">全部</button>
+        <button data-filter="short">≤ 2h</button>
+        <button data-filter="3">3h</button>
+        <button data-filter="4">4h</button>
+        <button data-filter="8">8h</button>
+        <button data-filter="9">9h</button>
+        <button data-filter="long">11h+</button>
+      </div>
+
+      <div class="flight-search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <input id="flightSearch" type="search" placeholder="搜尋機場、城市或航班號（如 CAN、ZUH、東京）" aria-label="搜尋機場、城市或航班號" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="schedule-head" aria-hidden="true">
+        <span>FLIGHT / ROUTE</span><span>DURATION</span>
+      </div>
+      <div id="flightList" class="flight-list" aria-live="polite"></div>
+
+      <footer class="departure-footer">
+        <div id="selectionSummary" class="selection-summary">
+          <span>尚未選擇航班</span>
+          <small>SELECT A FLIGHT TO DEPART</small>
+        </div>
+        <button id="takeoffBtn" class="primary-btn" disabled>
+          <span>起飛</span><small>TAKE OFF</small>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-8-4 16-3-6z"/></svg>
+        </button>
+      </footer>
+    </section>
+
+    <nav id="utilityBar" class="utility-bar glass" aria-label="一般功能">
+      <button id="openLogBtn" class="icon-text-btn" title="開啟飛行日誌">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2zm2 0v16M10 8h5M10 12h5"/></svg>
+        <span>飛行日誌</span>
+      </button>
+    </nav>
+
+    <header id="taskHud" class="glass task-hud" hidden>
+      <div class="flight-phase"><i></i><span id="phaseLabel">CLIMBING</span></div>
+      <div class="task-hud-copy">
+        <small>FOCUS MISSION</small>
+        <strong id="activeTask">自由專注</strong>
+      </div>
+      <div id="activeFlightNumber" class="flight-number">CX 000</div>
+    </header>
+
+    <aside id="telemetry" class="glass telemetry" hidden aria-label="即時飛行數據">
+      <div class="panel-kicker"><span>LIVE TELEMETRY</span><i></i></div>
+      <div class="telemetry-primary">
+        <div><span id="altitudeValue">0</span><small>FT</small></div>
+        <label>ALTITUDE · 高度</label>
+      </div>
+      <div class="telemetry-grid">
+        <div><small>GROUND SPEED</small><strong id="speedValue">0 <em>km/h</em></strong></div>
+        <div><small>HEADING</small><strong id="headingValue">000°</strong></div>
+        <div><small>FLOWN</small><strong id="flownValue">0 <em>km</em></strong></div>
+        <div><small>REMAINING</small><strong id="remainingValue">0 <em>km</em></strong></div>
+      </div>
+      <div class="coordinates"><span id="coordinatesValue">22.3080° N · 113.9185° E</span><i>GPS</i></div>
+    </aside>
+
+    <aside id="flightControls" class="glass flight-controls" hidden aria-label="飛行控制">
+      <button id="followBtn" class="control-btn active" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        <span>跟隨飛機</span><b>ON</b>
+      </button>
+      <button id="soundBtn" class="control-btn active" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9zM17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>
+        <span>機艙白噪音</span><b>ON</b>
+      </button>
+      <div class="volume-control">
+        <span>VOL</span><input id="volumeSlider" type="range" min="0" max="100" value="24" aria-label="白噪音音量"><output id="volumeValue">24</output>
+      </div>
+      <button id="wakeBtn" class="control-btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3zM9 20h6"/></svg>
+        <span>保持螢幕常亮</span><b>OFF</b>
+      </button>
+      <button id="notifyBtn" class="control-btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4"/></svg>
+        <span>抵達通知</span><b>OFF</b>
+      </button>
+      <button id="zenBtn" class="control-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        <span>沉浸掛機模式</span><b>ZEN</b>
+      </button>
+    </aside>
+
+    <section id="bottomHud" class="glass bottom-hud" hidden aria-label="航班進度">
+      <div class="route-progress-head">
+        <div class="airport-code"><strong id="originCode">HKG</strong><span id="originCity">香港</span></div>
+        <div class="time-remaining">
+          <small>TIME TO DESTINATION</small>
+          <strong id="countdownValue">00:00:00</strong>
+          <span class="elapsed-time">ELAPSED · 已飛 <b id="elapsedValue">00:00:00</b></span>
+        </div>
+        <div class="airport-code destination"><strong id="destinationCode">TPE</strong><span id="destinationCity">台北</span></div>
+      </div>
+      <div class="progress-track"><div id="progressFill"></div><i id="progressPlane">✈</i></div>
+      <div class="progress-meta"><span id="progressPercent">0% COMPLETE</span><span>ETA <b id="etaValue">--:--</b> LOCAL</span></div>
+    </section>
+
+    <div id="simControl" class="glass sim-control" hidden>
+      <span>SIM SPEED</span>
+      <div role="group" aria-label="模擬倍速">
+        <button class="active" data-speed="1">1x</button>
+        <button data-speed="60">60x</button>
+        <button data-speed="600">600x</button>
+      </div>
+      <button id="cancelFlightBtn" title="終止目前航程" aria-label="終止目前航程">×</button>
+    </div>
+
+    <button id="zenExitBtn" class="glass zen-exit" hidden>離開沉浸模式 <kbd>ESC</kbd></button>
+    <div id="zenProgress" class="zen-progress" hidden><div></div></div>
+
+    <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+    <aside id="logDrawer" class="glass log-drawer" hidden aria-labelledby="logTitle">
+      <header>
+        <div><p class="eyebrow">YOUR FOCUS HISTORY</p><h2 id="logTitle">飛行日誌</h2></div>
+        <button id="closeLogBtn" class="close-btn" aria-label="關閉飛行日誌">×</button>
+      </header>
+      <div class="log-stats">
+        <div><strong id="logFlights">0</strong><span>完成航程</span></div>
+        <div><strong id="logHours">0.0</strong><span>專注小時</span></div>
+        <div><strong id="logDistance">0</strong><span>總公里數</span></div>
+      </div>
+      <div id="logList" class="log-list"></div>
+      <button id="clearLogBtn" class="text-btn">清除所有飛行紀錄</button>
+    </aside>
+
+    <section id="arrivalCard" class="glass arrival-card" hidden aria-labelledby="arrivalTitle">
+      <div class="arrival-icon">✓</div>
+      <p class="eyebrow">TOUCHDOWN · MISSION COMPLETE</p>
+      <h2 id="arrivalTitle">降落完成</h2>
+      <p id="arrivalRoute">HKG → TPE</p>
+      <blockquote id="arrivalTask">自由專注</blockquote>
+      <div class="arrival-stats">
+        <div><strong id="arrivalDuration">1h 35m</strong><span>專注時間</span></div>
+        <div><strong id="arrivalDistance">798 km</strong><span>飛行距離</span></div>
+      </div>
+      <button id="newFlightBtn" class="primary-btn"><span>規劃下一段航程</span><small>NEW FLIGHT</small></button>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+  <script defer src="https://unpkg.com/@joergdietrich/leaflet.terminator@1.1.0/L.Terminator.js"></script>
+  <script defer src="flights.js"></script>
+  <script defer src="app.js"></script>
+</body>
+</html>
