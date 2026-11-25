@@ -171,6 +171,11 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .airport-dot { width: 8px; height: 8px; border: 2px solid #d5e4f1; background: #0b1120; border-radius: 50%; box-shadow: 0 0 0 4px rgba(213, 228, 241, .1); }
 .airport-label { color: #d9e4ef; background: rgba(7, 14, 25, .82); border: 1px solid rgba(148, 163, 184, .25); border-radius: 4px; padding: 3px 6px; font: 500 10px var(--mono); letter-spacing: .08em; }
 .airport-marker.destination .airport-dot { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(245, 158, 11, .12); }
+.city-label-marker { border: 0; background: transparent; }
+.city-name-label { display: flex; align-items: baseline; gap: 5px; width: max-content; transform: translate(7px, -50%); padding: 3px 6px; border: 1px solid rgba(148, 163, 184, .22); border-radius: 4px; background: rgba(7, 14, 25, .8); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); color: #dbe7f3; font: 500 10px var(--sans); letter-spacing: .02em; white-space: nowrap; }
+.city-name-label small { color: var(--cyan); font: 8px var(--mono); letter-spacing: .08em; }
+.map-theme-light .city-name-label { border-color: rgba(71, 85, 105, .25); background: rgba(248, 250, 252, .9); color: #1e293b; box-shadow: 0 2px 8px rgba(15, 23, 42, .1); }
+.map-theme-light .city-name-label small { color: #0369a1; }
 .plane-marker { background: transparent; border: 0; }
 .plane-body { width: 44px; height: 44px; display: grid; place-items: center; transform-origin: center; filter: drop-shadow(0 0 7px rgba(56, 189, 248, .8)); }
 .plane-body svg { width: 34px; height: 34px; fill: #d9f5ff; stroke: #38bdf8; stroke-width: .7; }

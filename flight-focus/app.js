@@ -37,6 +37,8 @@
     }
   };
   const TRANSPORT_LAYER_URL = `${ESRI_ROOT}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`;
+  const WORLD_CITY_CODES = new Set(['HKG', 'TPE', 'SIN', 'NRT', 'PEK', 'DXB', 'SYD', 'LHR']);
+  const MAJOR_CITY_CODES = new Set(['HKG', 'MFM', 'CAN', 'SZX', 'SHA', 'TPE', 'BKK', 'ICN', 'SIN', 'NRT', 'KIX', 'PEK', 'DXB', 'SYD', 'HEL', 'LHR', 'CDG', 'FRA', 'IST', 'AMS']);
   const $ = (id) => document.getElementById(id);
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -44,8 +46,10 @@
   let mapBaseLayer = null;
   let mapLabelsLayer = null;
   let mapTransportLayer = null;
+  let cityLabelsLayer = null;
   let mapTheme = 'dark';
   let mapDetail = 'cities';
+  let mapLanguage = 'zh';
   let terminator;
   let selectedFlight = null;
   let activeFlight = null;
@@ -95,6 +99,12 @@
       wheelPxPerZoomLevel: 90
     }).setView([24, 114], 3);
 
+    // 城市標籤使用獨立 pane，保持在航線與飛機之下，且不攔截地圖操作。
+    map.createPane('cityLabelsPane');
+    map.getPane('cityLabelsPane').style.zIndex = 350;
+    map.getPane('cityLabelsPane').style.pointerEvents = 'none';
+    map.on('zoomend', renderCityLabels);
+
     updateMapTheme();
 
     if (typeof L.terminator === 'function') {
@@ -107,17 +117,20 @@
       const preferences = JSON.parse(localStorage.getItem(MAP_PREFS_KEY) || '{}');
       if (MAP_THEMES[preferences.theme]) mapTheme = preferences.theme;
       if (['minimal', 'cities', 'detailed'].includes(preferences.detail)) mapDetail = preferences.detail;
+      if (['zh', 'en'].includes(preferences.language)) mapLanguage = preferences.language;
     } catch (_) {}
     $('mapThemeSelect').value = mapTheme;
     $('mapDetailSelect').value = mapDetail;
+    $('mapLanguageSelect').value = mapLanguage;
   }
 
   function saveMapPreferences() {
-    try { localStorage.setItem(MAP_PREFS_KEY, JSON.stringify({ theme: mapTheme, detail: mapDetail })); } catch (_) {}
+    try { localStorage.setItem(MAP_PREFS_KEY, JSON.stringify({ theme: mapTheme, detail: mapDetail, language: mapLanguage })); } catch (_) {}
   }
 
   function updateMapTheme() {
     const theme = MAP_THEMES[mapTheme];
+    $('map').classList.toggle('map-theme-light', mapTheme === 'light');
     if (mapBaseLayer) map.removeLayer(mapBaseLayer);
     mapBaseLayer = L.tileLayer(theme.url, {
       maxZoom: 19,
@@ -130,8 +143,10 @@
   function updateMapDetails() {
     if (mapLabelsLayer) map.removeLayer(mapLabelsLayer);
     if (mapTransportLayer) map.removeLayer(mapTransportLayer);
+    if (cityLabelsLayer) map.removeLayer(cityLabelsLayer);
     mapLabelsLayer = null;
     mapTransportLayer = null;
+    cityLabelsLayer = null;
     if (mapDetail === 'minimal') return;
 
     mapLabelsLayer = L.tileLayer(MAP_THEMES[mapTheme].labelsUrl, {
@@ -147,6 +162,46 @@
         zIndex: 3
       }).addTo(map);
     }
+    renderCityLabels();
+  }
+
+  function renderCityLabels() {
+    if (cityLabelsLayer) map.removeLayer(cityLabelsLayer);
+    cityLabelsLayer = null;
+    if (mapDetail === 'minimal') return;
+
+    const zoom = map.getZoom();
+    const seenCities = new Set();
+    const placedLabels = [];
+    const markers = [];
+    Object.entries(airports).forEach(([code, airport]) => {
+      // 依縮放層級逐步增加城市；相近標籤會碰撞時，保留較優先者。
+      if (zoom < 3 && !WORLD_CITY_CODES.has(code)) return;
+      if (zoom >= 3 && zoom < 4 && !MAJOR_CITY_CODES.has(code)) return;
+      if (seenCities.has(airport.cityEn)) return;
+      const city = mapLanguage === 'en' ? airport.cityEn : airport.city;
+      const point = map.latLngToContainerPoint([airport.lat, airport.lng]);
+      const textWidth = [...city].reduce((width, character) => width + (character.charCodeAt(0) > 255 ? 10 : 6), 0);
+      const labelWidth = textWidth + code.length * 6 + 30;
+      const bounds = { left: point.x + 4, top: point.y - 15, right: point.x + labelWidth + 10, bottom: point.y + 10 };
+      const collides = placedLabels.some((placed) => !(bounds.right < placed.left || bounds.left > placed.right || bounds.bottom < placed.top || bounds.top > placed.bottom));
+      if (collides) return;
+      seenCities.add(airport.cityEn);
+      placedLabels.push(bounds);
+      const icon = L.divIcon({
+        className: 'city-label-marker',
+        html: `<span class="city-name-label">${city}<small>${code}</small></span>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+      markers.push(L.marker([airport.lat, airport.lng], {
+        icon,
+        pane: 'cityLabelsPane',
+        interactive: false,
+        keyboard: false
+      }));
+    });
+    cityLabelsLayer = L.layerGroup(markers).addTo(map);
   }
 
   function toggleMapSettings() {
@@ -226,6 +281,11 @@
       updateMapDetails();
       saveMapPreferences();
     });
+    $('mapLanguageSelect').addEventListener('change', (event) => {
+      mapLanguage = event.target.value;
+      renderCityLabels();
+      saveMapPreferences();
+    });
     document.addEventListener('click', (event) => {
       if (!$('mapSettingsPanel').hidden && !$('mapSettingsPanel').contains(event.target) && !$('mapSettingsBtn').contains(event.target)) {
         closeMapSettings();
@@ -285,7 +345,8 @@
     const destination = airports[flight.to];
     const searchable = [
       flight.number, flight.id, flight.from, flight.to,
-      origin.city, destination.city, origin.name, destination.name
+      origin.city, destination.city, origin.cityEn, destination.cityEn,
+      origin.name, destination.name
     ].join(' ').toLowerCase();
     return searchable.includes(currentSearch);
   }
