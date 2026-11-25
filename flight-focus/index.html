@@ -77,11 +77,34 @@
     </section>
 
     <nav id="utilityBar" class="utility-bar glass" aria-label="一般功能">
+      <button id="mapSettingsBtn" class="icon-text-btn" title="地圖顯示設定" aria-controls="mapSettingsPanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></svg>
+        <span>地圖顯示</span>
+      </button>
       <button id="openLogBtn" class="icon-text-btn" title="開啟飛行日誌">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2zm2 0v16M10 8h5M10 12h5"/></svg>
         <span>飛行日誌</span>
       </button>
     </nav>
+
+    <section id="mapSettingsPanel" class="glass map-settings-panel" hidden aria-label="地圖顯示設定">
+      <div class="map-settings-head"><span>MAP DISPLAY</span><small>NO API KEY</small></div>
+      <label>地圖主題
+        <select id="mapThemeSelect">
+          <option value="dark">深灰雷達</option>
+          <option value="light">淺灰航圖</option>
+          <option value="satellite">衛星影像</option>
+        </select>
+      </label>
+      <label>地圖資訊
+        <select id="mapDetailSelect">
+          <option value="minimal">精簡 · 僅底圖</option>
+          <option value="cities">城市 · 地名與邊界</option>
+          <option value="detailed">詳細 · 城市與交通</option>
+        </select>
+      </label>
+      <p>放大地圖可顯示更多地名與道路細節。</p>
+    </section>
 
     <header id="taskHud" class="glass task-hud" hidden>
       <div class="flight-phase"><i></i><span id="phaseLabel">CLIMBING</span></div>

@@ -12,10 +12,40 @@
   // CARTO 自 2026 年起為無密鑰圖磚加上水印。留空會使用免密鑰 Esri 深灰底圖；
   // 如日後取得 CARTO 免費 Key，填入此處即可切回 Dark Matter。
   const CARTO_BASEMAPS_KEY = '';
+  const MAP_PREFS_KEY = 'flightFocus.mapPrefs.v1';
+  const ESRI_ROOT = 'https://server.arcgisonline.com/ArcGIS/rest/services';
+  const ESRI_ATTRIBUTION = '<a href="https://www.esri.com/">Esri</a>, TomTom, Garmin, FAO, NOAA, USGS';
+  const MAP_THEMES = {
+    dark: {
+      url: CARTO_BASEMAPS_KEY
+        ? `https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(CARTO_BASEMAPS_KEY)}`
+        : `${ESRI_ROOT}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+      attribution: CARTO_BASEMAPS_KEY
+        ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        : ESRI_ATTRIBUTION,
+      labelsUrl: `${ESRI_ROOT}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`
+    },
+    light: {
+      url: `${ESRI_ROOT}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+      attribution: ESRI_ATTRIBUTION,
+      labelsUrl: `${ESRI_ROOT}/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}`
+    },
+    satellite: {
+      url: `${ESRI_ROOT}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+      attribution: '<a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+      labelsUrl: `${ESRI_ROOT}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`
+    }
+  };
+  const TRANSPORT_LAYER_URL = `${ESRI_ROOT}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`;
   const $ = (id) => document.getElementById(id);
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
   let map;
+  let mapBaseLayer = null;
+  let mapLabelsLayer = null;
+  let mapTransportLayer = null;
+  let mapTheme = 'dark';
+  let mapDetail = 'cities';
   let terminator;
   let selectedFlight = null;
   let activeFlight = null;
@@ -43,6 +73,7 @@
   let notifyWanted = false;
 
   function init() {
+    loadMapPreferences();
     initMap();
     bindEvents();
     renderFlightList();
@@ -64,18 +95,72 @@
       wheelPxPerZoomLevel: 90
     }).setView([24, 114], 3);
 
-    const tileSource = CARTO_BASEMAPS_KEY ? {
-      url: `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(CARTO_BASEMAPS_KEY)}`,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    } : {
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      attribution: '<a href="https://www.esri.com/">Esri</a>, TomTom, Garmin, FAO, NOAA, USGS'
-    };
-    L.tileLayer(tileSource.url, { maxZoom: 19, attribution: tileSource.attribution }).addTo(map);
+    updateMapTheme();
 
     if (typeof L.terminator === 'function') {
       terminator = L.terminator({ color: '#020617', fillColor: '#020617', fillOpacity: 0.3, weight: 0 }).addTo(map);
     }
+  }
+
+  function loadMapPreferences() {
+    try {
+      const preferences = JSON.parse(localStorage.getItem(MAP_PREFS_KEY) || '{}');
+      if (MAP_THEMES[preferences.theme]) mapTheme = preferences.theme;
+      if (['minimal', 'cities', 'detailed'].includes(preferences.detail)) mapDetail = preferences.detail;
+    } catch (_) {}
+    $('mapThemeSelect').value = mapTheme;
+    $('mapDetailSelect').value = mapDetail;
+  }
+
+  function saveMapPreferences() {
+    try { localStorage.setItem(MAP_PREFS_KEY, JSON.stringify({ theme: mapTheme, detail: mapDetail })); } catch (_) {}
+  }
+
+  function updateMapTheme() {
+    const theme = MAP_THEMES[mapTheme];
+    if (mapBaseLayer) map.removeLayer(mapBaseLayer);
+    mapBaseLayer = L.tileLayer(theme.url, {
+      maxZoom: 19,
+      attribution: theme.attribution,
+      zIndex: 1
+    }).addTo(map);
+    updateMapDetails();
+  }
+
+  function updateMapDetails() {
+    if (mapLabelsLayer) map.removeLayer(mapLabelsLayer);
+    if (mapTransportLayer) map.removeLayer(mapTransportLayer);
+    mapLabelsLayer = null;
+    mapTransportLayer = null;
+    if (mapDetail === 'minimal') return;
+
+    mapLabelsLayer = L.tileLayer(MAP_THEMES[mapTheme].labelsUrl, {
+      maxZoom: 19,
+      attribution: ESRI_ATTRIBUTION,
+      zIndex: 2
+    }).addTo(map);
+
+    if (mapDetail === 'detailed') {
+      mapTransportLayer = L.tileLayer(TRANSPORT_LAYER_URL, {
+        maxZoom: 19,
+        attribution: ESRI_ATTRIBUTION,
+        zIndex: 3
+      }).addTo(map);
+    }
+  }
+
+  function toggleMapSettings() {
+    const panel = $('mapSettingsPanel');
+    const willOpen = panel.hidden;
+    panel.hidden = !willOpen;
+    $('mapSettingsBtn').classList.toggle('active', willOpen);
+    $('mapSettingsBtn').setAttribute('aria-expanded', String(willOpen));
+  }
+
+  function closeMapSettings() {
+    $('mapSettingsPanel').hidden = true;
+    $('mapSettingsBtn').classList.remove('active');
+    $('mapSettingsBtn').setAttribute('aria-expanded', 'false');
   }
 
   function updateTerminator() {
@@ -130,7 +215,27 @@
       button.addEventListener('click', () => setSimulationSpeed(Number(button.dataset.speed)));
     });
 
-    $('openLogBtn').addEventListener('click', openLog);
+    $('mapSettingsBtn').addEventListener('click', toggleMapSettings);
+    $('mapThemeSelect').addEventListener('change', (event) => {
+      mapTheme = event.target.value;
+      updateMapTheme();
+      saveMapPreferences();
+    });
+    $('mapDetailSelect').addEventListener('change', (event) => {
+      mapDetail = event.target.value;
+      updateMapDetails();
+      saveMapPreferences();
+    });
+    document.addEventListener('click', (event) => {
+      if (!$('mapSettingsPanel').hidden && !$('mapSettingsPanel').contains(event.target) && !$('mapSettingsBtn').contains(event.target)) {
+        closeMapSettings();
+      }
+    });
+
+    $('openLogBtn').addEventListener('click', () => {
+      closeMapSettings();
+      openLog();
+    });
     $('closeLogBtn').addEventListener('click', closeLog);
     $('drawerBackdrop').addEventListener('click', () => {
       if (!$('logDrawer').hidden) closeLog();
@@ -140,6 +245,7 @@
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       if (document.body.classList.contains('zen-mode')) exitZenMode();
+      else if (!$('mapSettingsPanel').hidden) closeMapSettings();
       else if (!$('logDrawer').hidden) closeLog();
     });
 
@@ -167,7 +273,7 @@
     switch (currentFilter) {
       case 'short': matchesDuration = minutes <= 140; break;
       case '3': matchesDuration = minutes >= 150 && minutes <= 210; break;
-      case '4': matchesDuration = minutes > 210 && minutes <= 270; break;
+      case '4': matchesDuration = minutes > 210 && minutes <= 300; break;
       case '8': matchesDuration = minutes >= 450 && minutes <= 510; break;
       case '9': matchesDuration = minutes > 510 && minutes <= 570; break;
       case 'long': matchesDuration = minutes >= 600; break;
@@ -226,6 +332,7 @@
 
   function takeOff() {
     if (!selectedFlight) return;
+    closeMapSettings();
     initAudio();
     if (audioContext && audioContext.state === 'suspended') audioContext.resume().catch(() => {});
 
@@ -670,6 +777,7 @@
   }
 
   function hideFlightHud() {
+    closeMapSettings();
     $('taskHud').hidden = true;
     $('telemetry').hidden = true;
     $('flightControls').hidden = true;
@@ -710,6 +818,7 @@
 
   function enterZenMode() {
     if (!flightState) return;
+    closeMapSettings();
     document.body.classList.add('zen-mode');
     $('zenExitBtn').hidden = false;
     $('zenProgress').hidden = false;

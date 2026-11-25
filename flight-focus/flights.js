@@ -28,6 +28,15 @@
     NRT: { city: '東京', name: '成田國際機場', lat: 35.7720, lng: 140.3929, tz: 'Asia/Tokyo' },
     HND: { city: '東京', name: '羽田機場', lat: 35.5494, lng: 139.7798, tz: 'Asia/Tokyo' },
     KIX: { city: '大阪', name: '關西國際機場', lat: 34.4347, lng: 135.2440, tz: 'Asia/Tokyo' },
+    ISG: { city: '石垣島', name: '新石垣機場', lat: 24.3964, lng: 124.2450, tz: 'Asia/Tokyo' },
+    OKA: { city: '沖繩', name: '那霸機場', lat: 26.1958, lng: 127.6458, tz: 'Asia/Tokyo' },
+    KOJ: { city: '鹿兒島', name: '鹿兒島機場', lat: 31.8034, lng: 130.7194, tz: 'Asia/Tokyo' },
+    FUK: { city: '福岡', name: '福岡機場', lat: 33.5859, lng: 130.4507, tz: 'Asia/Tokyo' },
+    HIJ: { city: '廣島', name: '廣島機場', lat: 34.4361, lng: 132.9194, tz: 'Asia/Tokyo' },
+    TAK: { city: '高松', name: '高松機場', lat: 34.2142, lng: 134.0156, tz: 'Asia/Tokyo' },
+    NGO: { city: '名古屋', name: '中部國際機場', lat: 34.8584, lng: 136.8054, tz: 'Asia/Tokyo' },
+    SDJ: { city: '仙台', name: '仙台機場', lat: 38.1397, lng: 140.9169, tz: 'Asia/Tokyo' },
+    CTS: { city: '札幌', name: '新千歲機場', lat: 42.7752, lng: 141.6923, tz: 'Asia/Tokyo' },
     PEK: { city: '北京', name: '首都國際機場', lat: 40.0799, lng: 116.6031, tz: 'Asia/Shanghai' },
     DXB: { city: '杜拜', name: '杜拜國際機場', lat: 25.2532, lng: 55.3657, tz: 'Asia/Dubai' },
     PER: { city: '珀斯', name: '珀斯機場', lat: -31.9403, lng: 115.9670, tz: 'Australia/Perth' },
@@ -71,6 +80,17 @@
     { id: 'LH797', from: 'HKG', to: 'FRA', number: 'LH 797', airline: '漢莎航空', aircraft: 'A340-300', minutes: 810 },
     { id: 'AF185', from: 'HKG', to: 'CDG', number: 'AF 185', airline: '法國航空', aircraft: 'B777-300ER', minutes: 835 },
     { id: 'CX251', from: 'HKG', to: 'LHR', number: 'CX 251', airline: '國泰航空', aircraft: 'B777-300ER', minutes: 840 },
+
+    // 香港出發 · 日本航線
+    { id: 'UO812', from: 'HKG', to: 'ISG', number: 'UO 812', airline: '香港快運', aircraft: 'A320neo', minutes: 130 },
+    { id: 'HX658', from: 'HKG', to: 'OKA', number: 'HX 658', airline: '香港航空', aircraft: 'A320', minutes: 155 },
+    { id: 'HX670', from: 'HKG', to: 'KOJ', number: 'HX 670', airline: '香港航空', aircraft: 'A320', minutes: 185 },
+    { id: 'CX588', from: 'HKG', to: 'FUK', number: 'CX 588', airline: '國泰航空', aircraft: 'A330-300', minutes: 195 },
+    { id: 'UO822', from: 'HKG', to: 'HIJ', number: 'UO 822', airline: '香港快運', aircraft: 'A320neo', minutes: 205 },
+    { id: 'UO522', from: 'HKG', to: 'TAK', number: 'UO 522', airline: '香港快運', aircraft: 'A320neo', minutes: 210 },
+    { id: 'CX536', from: 'HKG', to: 'NGO', number: 'CX 536', airline: '國泰航空', aircraft: 'A330-300', minutes: 220 },
+    { id: 'UO890', from: 'HKG', to: 'SDJ', number: 'UO 890', airline: '香港快運', aircraft: 'A321neo', minutes: 265 },
+    { id: 'CX580', from: 'HKG', to: 'CTS', number: 'CX 580', airline: '國泰航空', aircraft: 'B777-300', minutes: 285 },
 
     // 廣州出發
     { id: 'CZ3537', from: 'CAN', to: 'SHA', number: 'CZ 3537', airline: '中國南方航空', aircraft: 'B737-800', minutes: 135 },
