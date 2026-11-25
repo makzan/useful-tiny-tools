@@ -18,6 +18,8 @@
     CTU: { city: '成都', name: '成都雙流國際機場', lat: 30.5785, lng: 103.9471, tz: 'Asia/Shanghai' },
     XIY: { city: '西安', name: '西安咸陽國際機場', lat: 34.4471, lng: 108.7516, tz: 'Asia/Shanghai' },
     HRB: { city: '哈爾濱', name: '哈爾濱太平國際機場', lat: 45.6234, lng: 126.2503, tz: 'Asia/Shanghai' },
+    HAK: { city: '海口', name: '海口美蘭國際機場', lat: 19.9349, lng: 110.4589, tz: 'Asia/Shanghai' },
+    XMN: { city: '廈門', name: '廈門高崎國際機場', lat: 24.5440, lng: 118.1277, tz: 'Asia/Shanghai' },
     TPE: { city: '台北', name: '桃園國際機場', lat: 25.0797, lng: 121.2342, tz: 'Asia/Taipei' },
     MNL: { city: '馬尼拉', name: '尼諾伊·艾奎諾國際機場', lat: 14.5086, lng: 121.0194, tz: 'Asia/Manila' },
     BKK: { city: '曼谷', name: '蘇凡納布機場', lat: 13.6900, lng: 100.7501, tz: 'Asia/Bangkok' },
@@ -47,8 +49,12 @@
     AKL: { city: '奧克蘭', name: '奧克蘭機場', lat: -37.0082, lng: 174.7850, tz: 'Pacific/Auckland' },
     HEL: { city: '赫爾辛基', name: '萬塔機場', lat: 60.3172, lng: 24.9633, tz: 'Europe/Helsinki' },
     LHR: { city: '倫敦', name: '希斯路機場', lat: 51.4700, lng: -0.4543, tz: 'Europe/London' },
+    EDI: { city: '愛丁堡', name: '愛丁堡機場', lat: 55.9508, lng: -3.3615, tz: 'Europe/London' },
+    MAN: { city: '曼徹斯特', name: '曼徹斯特機場', lat: 53.3537, lng: -2.2750, tz: 'Europe/London' },
     CDG: { city: '巴黎', name: '戴高樂機場', lat: 49.0097, lng: 2.5479, tz: 'Europe/Paris' },
     FRA: { city: '法蘭克福', name: '法蘭克福機場', lat: 50.0379, lng: 8.5622, tz: 'Europe/Berlin' },
+    MUC: { city: '慕尼黑', name: '慕尼黑機場', lat: 48.3538, lng: 11.7861, tz: 'Europe/Berlin' },
+    BER: { city: '柏林', name: '柏林勃蘭登堡機場', lat: 52.3667, lng: 13.5033, tz: 'Europe/Berlin' },
     IST: { city: '伊斯坦堡', name: '伊斯坦堡機場', lat: 41.2753, lng: 28.7519, tz: 'Europe/Istanbul' },
     AMS: { city: '阿姆斯特丹', name: '阿姆斯特丹史基浦機場', lat: 52.3105, lng: 4.7683, tz: 'Europe/Amsterdam' },
     BCN: { city: '巴塞隆拿', name: '巴塞隆拿埃爾普拉特機場', lat: 41.2974, lng: 2.0833, tz: 'Europe/Madrid' },
@@ -136,7 +142,17 @@
     { id: 'BA199', from: 'LHR', to: 'BOM', number: 'BA 199', airline: '英國航空', aircraft: 'B787-8', minutes: 540 },
     { id: 'TK55', from: 'SIN', to: 'IST', number: 'TK 55', airline: '土耳其航空', aircraft: 'B777-300ER', minutes: 660 },
     { id: 'SQ308', from: 'SIN', to: 'LHR', number: 'SQ 308', airline: '新加坡航空', aircraft: 'A350-900', minutes: 845 },
-    { id: 'AY074', from: 'NRT', to: 'HEL', number: 'AY 074', airline: '芬蘭航空', aircraft: 'A350-900', minutes: 780 }
+    { id: 'AY074', from: 'NRT', to: 'HEL', number: 'AY 074', airline: '芬蘭航空', aircraft: 'A350-900', minutes: 780 },
+
+    // 大灣區及區域短途
+    { id: 'CZ8632', from: 'ZUH', to: 'HAK', number: 'CZ 8632', airline: '中國南方航空', aircraft: 'B737-800', minutes: 75 },
+    { id: 'CX978', from: 'HKG', to: 'XMN', number: 'CX 978', airline: '國泰航空', aircraft: 'A330-300', minutes: 95 },
+
+    // 歐洲內陸短途
+    { id: 'BA1438', from: 'LHR', to: 'EDI', number: 'BA 1438', airline: '英國航空', aircraft: 'A320neo', minutes: 85 },
+    { id: 'BA1370', from: 'LHR', to: 'MAN', number: 'BA 1370', airline: '英國航空', aircraft: 'A320', minutes: 70 },
+    { id: 'LH110', from: 'FRA', to: 'MUC', number: 'LH 110', airline: '漢莎航空', aircraft: 'A320neo', minutes: 55 },
+    { id: 'LH180', from: 'FRA', to: 'BER', number: 'LH 180', airline: '漢莎航空', aircraft: 'A320neo', minutes: 70 }
   ];
 
   window.FLIGHT_FOCUS_DATA = Object.freeze({ airports, routes });
